@@ -1,0 +1,4727 @@
+
+
+
+/*******************************************************************************
+ File : \src\begin\Func.java 
+*******************************************************************************/
+package begin;
+
+import java.util.regex.*;
+//import java.util.ArrayList;
+import java.text.*;
+import java.util.*;
+
+import javax.swing.*;
+import javax.swing.event.*;
+import javax.swing.text.*;
+import javax.swing.text.html.*;
+
+public class Func {  
+  
+  private static String stringValue;
+  private static int num;
+  private static String pCTab = "0123456789ABCDEFGHJKLMNPQRSTUVWXY";
+  private static String sysLine = System.getProperty("line.separator");
+  
+  private static SimpleDateFormat tmTmp1 = new SimpleDateFormat("yyyy-MM-dd");
+  private static SimpleDateFormat tmTmp2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+  private static SimpleDateFormat tmTmp3 = new SimpleDateFormat("HH:mm:ss");
+  private static SimpleDateFormat tmTmp4 = new SimpleDateFormat("SSS");  
+  private static String tmStr;
+  private static Date tmObj = new Date();
+  private static Calendar tmCal  = Calendar.getInstance();
+  
+  public static void doException(Exception e, String s) {
+    String eMsg = e.toString(); 
+    int p = eMsg.indexOf(":")+1; 
+    int q = eMsg.lastIndexOf("(");
+    String sMsg = eMsg.substring(0,p);
+    if(q>(p+5)) sMsg += sysLine+eMsg.substring(p,q);
+    sMsg += sysLine+eMsg.substring(q,eMsg.length()); 
+    JOptionPane.showMessageDialog(null, "[Error] "+s+"\n\r"+sMsg); 
+  }
+  
+  public static String getYYYYMMDD(String xTStr) 
+  {
+	  int nStr = xTStr.length();
+	  if(nStr<5){
+	      tmStr = tmTmp1.format(tmCal.getTime());
+	  }else{
+	    if(nStr>10){
+	  	try { tmObj = tmTmp2.parse(xTStr); }
+	  	catch(Exception e) {;}
+	  	tmStr = tmTmp2.format(tmObj.getTime());
+	  	tmStr = tmStr.substring(0,10);
+	    }else{
+	  	try { tmObj = tmTmp1.parse(xTStr);}
+	  	catch(Exception e) {;}
+	  	tmStr = tmTmp1.format(tmObj.getTime());
+	    }	
+	  }
+    return tmStr.replace("-","");
+  }
+  
+  public static String getHHMMSS() {
+	tmStr = tmTmp3.format(tmCal.getTime());
+	return tmStr.replace(":","");
+  }
+  
+  public static String getMSec() {
+	tmStr = tmTmp4.format(tmCal.getTime());
+	return tmStr;
+  }
+  
+  public static String get999ID(String xStr,int xLen) {
+	if(xLen>24){ xLen = 24; }
+	tmStr = "000000000000000000000000"+xStr; 
+	int n = tmStr.length();
+	return tmStr.substring(n-xLen,n);
+  }
+  
+  public static String getAutoID(int xLen) {
+	if(xLen>24){ xLen = 24; }
+	tmStr = tmTmp2.format(tmCal.getTime()); //yyyy-MM-dd HH:mm:ss
+	tmStr = tmStr.replace("-","").replace(":","").replace(" ","");
+	String sCTab = pCTab; 
+
+	String s = tmStr; 
+	int t = 0;
+	tmStr = s.substring(0,4); // yyyy
+	t = Integer.parseInt(s.substring(4,6));
+	tmStr += sCTab.substring(t,t+1); // mm
+	t = Integer.parseInt(s.substring(6,8));
+	tmStr += sCTab.substring(t,t+1); // dd
+	t = Integer.parseInt(s.substring(8,10));
+	tmStr += sCTab.substring(t,t+1); // HH
+	
+	int nMin = Integer.parseInt(s.substring(10,12));
+	int nSec = Integer.parseInt(s.substring(12,14));
+	int nSed = (int)(nSec/2); // 附加
+	nSec = (int)((nMin*60+nSec)/4); // mmss - XX
+	nMin = (int)Math.floor(nSec/32);
+	nSec = nSec%32;
+	tmStr += sCTab.substring(nMin,nMin+1);
+	tmStr += sCTab.substring(nSec,nSec+1);
+	tmStr += sCTab.substring(nSed,nSed+1); // 附加
+	
+	tmStr = tmStr+getRndID("",15); 
+	return tmStr.substring(0,xLen);
+
+  }
+  
+  public static String getRndID(String xType,int xLen) {
+	Random random = new Random();
+    String sCTab = pCTab; 
+    int sCMax = 33;
+	String sRand = ""; // Num,ABC,abc,Key,Full
+	if(xType.equals("0")){
+      sCTab = "0123456789"; 
+      sCMax = 10;
+	}
+	if(xType.equals("A")){
+      sCTab = "ABCDEFGHJKLMNPQRSTUVWXY"; 
+      sCMax = 23;
+	}
+	if(xType.equals("a")){
+      sCTab = "abcdefghijkmnpqrstuvwxy"; 
+      sCMax = 23;
+	}
+	if(xType.equals("F")){
+      sCTab = pCTab+"abcdefghijkmnpqrstuvwxy"; 
+      sCMax = 56;
+	}
+    for (int i=0;i<xLen;i++){
+      int rPos = random.nextInt(sCMax);
+      String rand = sCTab.substring(rPos,rPos+1); 
+	    sRand += rand;
+    }
+    return sRand;
+  }  
+
+  /* http://www.cppblog.com/biao/archive/2009/11/04/100130.html?opt=admin
+  ANSI：　　　　　　　　无格式定义；
+  Unicode： 　　　　　　前两个字节为FFFE；
+  Unicode big endian：　前两字节为FEFF；　 
+  UTF-8：　 　　　　　　前两字节为EFBB；
+  */
+  public static String get_charset( byte[] first3Bytes ) {   
+    String charset = ""; //GBK
+    try {    
+      if ( first3Bytes[0] == (byte) 0xFF && first3Bytes[1] == (byte) 0xFE ) {   
+        charset = "UTF-16LE";    
+      }   
+      else if ( first3Bytes[0] == (byte) 0xFE && first3Bytes[1] == (byte) 0xFF ) {   
+        charset = "UTF-16BE";   
+      }   
+      else if ( first3Bytes[0] == (byte) 0xEF && first3Bytes[1] == (byte) 0xBB && first3Bytes[2] == (byte) 0xBF ) {   
+        charset = "UTF-8";   
+      }   
+    } catch ( Exception e ) {   
+      e.printStackTrace();   
+    }   
+    return charset;   
+  }   
+
+     	
+}
+
+
+
+
+/*******************************************************************************
+ File : \src\begin\Info.java 
+*******************************************************************************/
+package begin;
+
+import java.util.*;
+import java.io.*;
+import java.nio.charset.*;
+
+public class Info {  
+  
+	public static Properties getJDKInfo() // getJVMInfo
+	{
+	  Properties pps = System.getProperties();
+    return pps;
+    /*
+		Properties ps = getJDKInfo();
+		System.out.println(ps.getProperty("os.name"));
+		ps.list(System.out);  
+    System.out.println("java_vendor:" + System.getProperty("java.vendor")); //Java 运行时环境供应商                                               
+    ystem.out.println("java_vendor_url:" + System.getProperty("java.vendor.url")); //Java 供应商的 URL                                            
+    System.out.println("java_home:" + System.getProperty("java.home")); //Java 安装目录                                                           
+    System.out.println("java_class_version:" + System.getProperty("java.class.version")); //Java 类格式版本号                                     
+    System.out.println("java_class_path:" + System.getProperty("java.class.path")); //Java 类路径                                                 
+    System.out.println("os_name:" + System.getProperty("os.name")); //操作系统的名称                                                              
+    System.out.println("os_arch:" + System.getProperty("os.arch")); //操作系统的架构                                                              
+    System.out.println("os_version:" + System.getProperty("os.version")); //Java 运行时环境版本                                                   
+    System.out.println("user_name:" + System.getProperty("user.name")); //用户的账户名称                                                          
+    System.out.println("user_home:" + System.getProperty("user.home")); // 用户的主目录                                                           
+    System.out.println("user_dir:" + System.getProperty("user.dir")); //用户的当前工作目录                                                        
+    System.out.println("java_vm_specification_version:" + System.getProperty("java.vm.specification.version")); //Java 虚拟机规范版本             
+    System.out.println("java_vm_specification_vendor:" + System.getProperty("java.vm.specification.vendor")); //Java 虚拟机规范供应商             
+    System.out.println("java_vm_specification_name:" + System.getProperty("java.vm.specification.name")); //Java 虚拟机规范名称                   
+    System.out.println("java_vm_version:" + System.getProperty("java.vm.version")); //Java 虚拟机实现版本                                         
+    System.out.println("java_vm_vendor:" + System.getProperty("java.vm.vendor")); //Java 虚拟机实现供应商                                         
+    System.out.println("java_vm_name:" + System.getProperty("java.vm.name")); //Java 虚拟机实现名称                                               
+    System.out.println("java_ext_dirs:" + System.getProperty("java.ext.dirs")); //一个或多个扩展目录的路径                                        
+    System.out.println("file_separator:" + System.getProperty("file.separator")); //文件分隔符（在 UNIX 系统中是“/”?                            
+    System.out.println("path_separator:" + System.getProperty("path.separator")); //路径分隔符（在 UNIX 系统中是“:”?                            
+    System.out.println("line_separator:" + System.getProperty("line.separator")); //行分隔符（在 UNIX 系统中是“/n”） 		  
+    */
+  }
+
+	public static String[] getCharsets()
+	{		
+    Map m = Charset.availableCharsets();                                    
+    Set names = m.keySet();                                                 
+    Iterator it = names.iterator();  
+    String[] a = new String[256];                                   
+    int i = 0;                                                                         
+    while(it.hasNext())                                    
+    {                                                                       
+      i++;
+      a[i] = it.next().toString();                                                  
+    } 
+    a[0] = String.valueOf(i);
+    return a; 
+		/* Demo: 
+		String[] a = getCharsets();
+		int m = Integer.valueOf(a[0]);
+		for(int i=1;i<=m;i++){
+			System.out.println(i+":"+a[i]+";");   
+		}
+		*/                                                                   	
+  }
+
+	public static Properties getConfigs(String fName,String cSet)
+	{
+	  fName = getBasePath()+fName;
+	  Properties pps = new Properties(); 
+	  try { 
+	  	pps.load(new FileInputStream(fName)); 
+	  } catch(Exception e) { 
+	  	if(fName.indexOf("PeaceBox.ini")>0) {
+	  	  System.out.println("Reset: PeaceBox.ini"); 
+	    } else {
+	    	System.out.println("Error getConfig:"+e.toString()); 
+	    }
+	  } 
+	  if(cSet.equals("")) cSet = pps.getProperty("cfgCSet","ISO-8859-1");    
+	  if(!cSet.equals("ISO-8859-1")) {                      
+	    Enumeration en = pps.propertyNames();                              
+	    while(en.hasMoreElements()) {                                      
+	      String strKey = (String)en.nextElement();                        
+	      String strValue = pps.getProperty(strKey); 
+	      try {
+	        strValue = new String(strValue.getBytes("ISO-8859-1"),cSet); 
+	      } catch(Exception e) { 
+	    	  System.out.println("Error getConfig:"+fName+e.toString()); 
+	      }                                                             
+	      pps.setProperty(strKey, strValue);                               
+	    }  
+	  }                                                                 
+	  return pps;        
+	  /*
+		Properties cfg = getConfigs("cfgSystem.ini","GB2312");
+		System.out.println(cfg.getProperty("PoolID"));
+		cfg.list(System.out);
+	  */                                                
+	}
+	
+	public static String getBasePath()
+	{
+	  String udir = System.getProperty("user.dir");  
+	  String fsep = File.separator;
+	  int n = udir.length();
+	  String s3 = udir.substring(n-3,n);
+	  if(s3.equals("bin")||s3.equals("src"))
+	  {
+	  	udir = udir.substring(0,n-3);
+	  } else {
+	  	udir += "\\";
+	  }
+	  return udir;
+	}
+     	
+}
+
+
+
+
+/*******************************************************************************
+ File : \src\begin\PeaceBox.java 
+*******************************************************************************/
+package begin;
+
+import module.*;
+import panels.*;
+import sframe.*;
+
+//import java.lang.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
+//import java.util.Hashtable.*;
+//import java.sql.*;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+//import java.net.*; 
+
+public class PeaceBox extends JFrame {
+
+    public static Properties sysConfig = Info.getConfigs("data\\PeaceBox.ini","");
+    public static String sysLang = sysConfig.getProperty("cfgLang","English.ini");
+    public static String sysCSet = sysConfig.getProperty("cfgCSet","ISO-8859-1");
+    public static Properties sysLTab = Info.getConfigs("img\\lang\\"+sysLang,sysCSet);
+    
+    public static String sysBasePath = Info.getBasePath();
+    public static String sysLine = System.getProperty("line.separator");
+    public static Font sysFont = new Font(sysConfig.getProperty("cfgFont","Courier"),0,12);
+    
+    public static JTextArea sysEditor = new JTextArea("");
+    public static JLabel labState = new JLabel(sysBasePath);  
+    public static JLabel labInfo = new JLabel(sysLTab.getProperty("boxPos","Pos")+":0,0 "+sysLTab.getProperty("boxSize","Size")+":0B");          
+    public static JLabel labPeace = new JLabel(sysLTab.getProperty("boxAdv","Adver... --- Peace")); //
+    
+    public static JPanel pSide = new JPanel(new FlowLayout()); 
+    public static ToolBar tooBar = new ToolBar(); 
+     
+  public PeaceBox(String title)
+  {
+    super(title); //setTitle("Peace Box");
+  	sysEditor.setFont(sysFont); sysEditor.setMargin(new Insets(1,3,1,1));
+    setIconImage(Toolkit.getDefaultToolkit().getImage(sysBasePath+"img\\logo\\icon.jpg")); 
+    setSize(720,560); setLocation(120,120);
+    addWindowListener(new actClosing()); //setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); 
+    
+    //setLayout(new BorderLayout(0,0)); //(默认)东西南北方位布局
+    JPanel pTop = new JPanel(new GridLayout(2,1,0,0)); 
+    JPanel pTool = new JPanel(new FlowLayout(FlowLayout.RIGHT,2,1)); 
+    //JPanel pSide = new JPanel(new FlowLayout());  
+    JPanel pState = new JPanel(new GridLayout(1,2,0,0)); 
+    JPanel pStat2 = new JPanel(new GridLayout(1,2,0,0));
+    JPanel pStat3 = new JPanel(new FlowLayout(FlowLayout.RIGHT,0,0));
+    
+    JMenuBar sysMenu = new JMenuBar(); 
+    tooBar.setTools(pTool);
+    JScrollPane pScroll = new JScrollPane(sysEditor);
+    sysEditor.addCaretListener(new updEditor());
+    
+    // ===== 布局设置 === Layout ....
+    add(pTop,"North"); 
+    pTop.add(sysMenu);
+    pTop.add(pTool); 
+    
+    add(pScroll,"Center"); add(pSide,"West"); 
+    SideBar sideBar = new SideBar(); sideBar.setSide();
+
+    add(pState,"South");   
+    pState.add(labState); labState.setFont(sysFont);
+    pState.add(pStat2); 
+    pStat2.add(labInfo);  labInfo.setFont(sysFont); 
+    pStat2.add(pStat3); 
+    pStat3.add(labPeace); labPeace.setFont(sysFont);      
+        
+     
+    // ===== 菜单添加 === 
+    MFile mFile = new MFile(); mFile.setMenu(sysMenu); 
+    MEdit mEdit = new MEdit(); mEdit.setMenu(sysMenu);
+        
+    MMods mTool = new MMods(); mTool.setTool(sysMenu);
+    MMods mPuzz = new MMods(); mPuzz.setPuzz(sysMenu);
+    
+    MSett mSett = new MSett(); mSett.setMenu(sysMenu);
+    MHelp mHelp = new MHelp(); mHelp.setMenu(sysMenu);
+    
+  }
+  
+  public static void main(String[] args) 
+  {
+    Enumeration keys = UIManager.getDefaults().keys();
+    while (keys.hasMoreElements()) {
+      Object key = keys.nextElement();
+      Object value = UIManager.get(key);
+      if (value instanceof javax.swing.plaf.FontUIResource) {
+        UIManager.put(key, sysFont);
+      }
+    } 
+    PeaceBox pBox = new PeaceBox(sysLTab.getProperty("boxTitle","Peace Box"));
+    pBox.setVisible(true); 
+  }
+
+  public static void actExit() 
+  {
+    // Save Prop Items
+    //int i = JOptionPane.showConfirmDialog(null,"确认要关闭系统[PeaceBox]?","系统提示",JOptionPane.YES_NO_OPTION);
+    //if(i==0) System.exit(0);   
+    //try {
+      MSett.saveProp();
+    //} catch(Exception ex) {   
+	    //Func.doException(ex, sysLTab.getProperty("actExit","(saveProp)"));
+	    System.exit(0);
+    //}
+  }
+
+  private class actClosing extends WindowAdapter {
+    public void windowClosing(WindowEvent wevent){ 
+    	actExit();
+    } 
+  } // 退出Exit
+
+ 	class updEditor implements CaretListener
+	{
+    public void caretUpdate(CaretEvent e1) {
+      try {
+        int row = sysEditor.getLineOfOffset(e1.getDot());
+        int col = e1.getDot() - sysEditor.getLineStartOffset(row);
+        int len = sysEditor.getText().length();
+        labInfo.setText(sysLTab.getProperty("boxPos","Pos")+":"+(row+1)+","+col+" "+sysLTab.getProperty("boxSize","Size")+":"+len+"B"); 
+      } catch (Exception e2) {
+        e2.printStackTrace(); 
+      }
+    } 
+	} //www.cppblog.com/biao/archive/2009/05/27/85854.html
+ 
+/*
+    Component[] comp = this.getComponents(); 
+    for(Component cp:comp){ 
+      cp.setFont(sysFont); 
+    } 
+*/ 
+
+}
+
+
+
+
+
+/*******************************************************************************
+ File : \src\module\MMods.java 
+*******************************************************************************/
+package module;
+
+import begin.*;
+import module.tools.*;
+import module.puzzler.*;
+import sframe.*;
+
+//import java.lang.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
+//import java.sql.*;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+//import java.net.*;
+
+public class MMods {  
+  
+  JTextArea sysEditor = PeaceBox.sysEditor;
+  Properties sysLTab = PeaceBox.sysLTab; //sysLTab.getProperty("xxName","defValue")
+  String sysLine = System.getProperty("line.separator");
+  String sysBasePath = Info.getBasePath();
+  Properties sysConfig = PeaceBox.sysConfig;
+  // FETPSH
+
+  public void setTool(JMenuBar sysMenu) 
+  { 
+    JMenu m = new JMenu(sysLTab.getProperty("tlSubj","Tools(T)")); sysMenu.add(m); m.setMnemonic('T'); 
+    
+    JMenuItem tScan = new JMenuItem(sysLTab.getProperty("tlIScan","IP Scan(T)"),'I');      m.add(tScan);
+    m.addSeparator();
+    JMenuItem tDown = new JMenuItem(sysLTab.getProperty("tlIDown","Download(D)"),'D');     m.add(tDown); tDown.setEnabled(false);
+    JMenuItem tLink = new JMenuItem(sysLTab.getProperty("tlILink","Get Links(E)"),'E');    m.add(tLink);
+    JMenuItem tDLnk = new JMenuItem(sysLTab.getProperty("tlIDLnk","Down Links(L)"),'L');   m.add(tDLnk);
+    m.addSeparator();
+    JMenuItem tFRep = new JMenuItem(sysLTab.getProperty("tlIFRep","File Replace(R)"),'R'); m.add(tFRep); tFRep.setEnabled(false);
+    JMenuItem tCode = new JMenuItem(sysLTab.getProperty("tlICode","Coder Report(C)"),'C'); m.add(tCode);                                                
+    m.addSeparator();
+    JMenuItem tIIS = new JMenuItem(sysLTab.getProperty("tlIQIIS","IIS Qurey(Q)"),'Q');     m.add(tIIS); tIIS.setEnabled(false);
+
+    tScan.addActionListener(new taScan());
+    //tDown.addActionListener(new aDown());
+    tLink.addActionListener(new taLink());
+    tDLnk.addActionListener(new taDLnk());
+    //tFRep.addActionListener(new taFRep());
+    tCode.addActionListener(new taCode());
+    
+    tScan.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_I,InputEvent.CTRL_MASK));
+    tDown.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D,InputEvent.CTRL_MASK));
+    tCode.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O,InputEvent.CTRL_MASK));
+    
+  } 
+
+  public void setPuzz(JMenuBar sysMenu) 
+  { 
+    JMenu m = new JMenu(sysLTab.getProperty("pzSubj","Puzzle(P)")); sysMenu.add(m); m.setMnemonic('P'); 
+    
+    JMenuItem pAscii = new JMenuItem(sysLTab.getProperty("pzIAscii","Ascii Code ..."));   m.add(pAscii); 
+    m.addSeparator();                                                                     
+    JMenuItem pP100 = new JMenuItem(sysLTab.getProperty("pzIP100","Prim100(P)"),'P');     m.add(pP100);  
+    JMenuItem pSup1 = new JMenuItem(sysLTab.getProperty("pzISup1","Sup1"));               m.add(pSup1);
+    JMenuItem pSup2 = new JMenuItem(sysLTab.getProperty("pzISup2","Sup2"));               m.add(pSup2);
+    JMenuItem pSup = new JMenuItem(sysLTab.getProperty("pzIPrime","Sup...(M)"),'M');      m.add(pSup); pSup.setEnabled(false);
+    m.addSeparator();                                                                     
+    JMenuItem pSudoku = new JMenuItem(sysLTab.getProperty("pzISudoku","Sudoku(E)"),'E');  m.add(pSudoku); 
+    JMenuItem pSolver = new JMenuItem(sysLTab.getProperty("pzISolver","Solver(F)"),'F');  m.add(pSolver); 
+    m.addSeparator();                                      
+    JMenuItem pCal24 = new JMenuItem(sysLTab.getProperty("pzICal24","Calculate 24"),'U'); m.add(pCal24); 
+    JMenuItem pCalcu = new JMenuItem(sysLTab.getProperty("pzICalcu","Calculate"));        m.add(pCalcu); 
+
+    pAscii.addActionListener(new paAscii());
+    pP100.addActionListener(new paP100());
+    pSup1.addActionListener(new paSup1());
+    pSup2.addActionListener(new paSup2());
+    //pSup.addActionListener(new paSup());
+    pSudoku.addActionListener(new paSudoku());
+    pSolver.addActionListener(new paSolver());
+    pCal24.addActionListener(new paCal24());
+    pCalcu.addActionListener(new paCalcu());
+    
+    pP100.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P,InputEvent.CTRL_MASK));
+    pSudoku.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E,InputEvent.CTRL_MASK));
+    pCal24.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U,InputEvent.CTRL_MASK));
+    
+  } 
+
+	class taScan implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) 
+	  { IPScan.scanDialog(); }
+	} // IP扫描 
+	
+	class taLink implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) 
+	  { Down.getLinks(); }
+	} // 提取连接mu3Link	
+	class taDLnk implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) 
+	  { Down.start(); }
+	} // 下载mu4DLnk
+	class taCode implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) 
+	  { Coder.CUnite("导出代码"); }
+	} // Coder
+	
+	class paAscii implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) { 
+	  	try {
+	  	  String cmd = "cmd.exe /c start iexplore "+sysBasePath+"data\\ascii.htm";
+	  	  Runtime.getRuntime().exec(cmd); 
+	    } catch (Exception ex) {
+	    	Func.doException(ex, sysLTab.getProperty("pzMAscii")+":(mt1Ascii)");
+	    }
+	  }
+	} // Ascii
+	
+	class paP100 implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) { 
+	  	{ sysEditor.setText(Prime.getList(1, 100)); }
+	  }
+	} // mt21Prime
+	
+	class paSup1 implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) { 
+	  	{ sysEditor.setText(Prime.getSup(100001,499999,1)); }
+	  }
+	} // mt22Prime
+	
+	class paSup2 implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) { 
+	  	{ sysEditor.setText(Prime.getSup(100001,999999,2)); }
+	  }
+	} // mt23Prime
+	
+	class paCal24 implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) { 
+	  	{ Cal24.calcu(sysLTab.getProperty("pzMCal24","Calculate 24")); }
+	  }
+	} // Cal24 
+	class paCalcu implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) { 
+	  	{ CMath.Calcu(); }
+	  }
+	} // Calcu 
+
+	class paSudoku implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) { 
+	  	{ 	 
+	  		String t1,t2;
+	  		t1 = sysEditor.getText();
+	  		t2 = Sudoku.getTab();
+	  		t2 += sysLine+"------------  "+Func.getHHMMSS()+sysLine;
+	  		sysEditor.setText(t2 + t1);
+	  	}
+	  }
+	} // Sudoku	
+	
+	class paSolver implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) 
+	  { 	 
+      int d[][] = Solver.getData(sysEditor.getText());
+      sysEditor.setText(Solver.getTab(d));
+	  }
+	} // Solver	
+
+
+  
+}
+
+
+
+
+
+/*******************************************************************************
+ File : \src\module\puzzler\Cal24.java 
+*******************************************************************************/
+package module.puzzler;
+import begin.*;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import java.awt.*;
+import java.awt.event.*;
+
+public class Cal24 {
+	
+  private double[] input;
+  private int[] trunk;
+  public static final double PRECISION = 0.00001;
+  //private static boolean creatForm=false; //true;
+  private static boolean closeForm=false;
+
+  Cal24(double[] input) {
+    this.input = input;
+    this.trunk = new int[input.length];
+  }
+
+  private ArrayList<double[]> getAllSort() {
+    ArrayList<double[]> allSort = new ArrayList<double[]>();
+    int length = input.length;
+    int flag = 0;
+    for (int i = 0; i < length; i++) {
+        trunk[i] = i;
+    }
+    flag = length - 1;
+    while (true) {
+        flag = forward();
+        if (flag < 0) {
+            break;
+        }
+        allSort.add(getOneSort(trunk));
+        Arrays.sort(trunk, flag + 1, length);
+        updateTrunk(flag);
+    }
+    return allSort;
+  }
+
+  private void updateTrunk(int flag) {
+    int[] after = Arrays.copyOfRange(trunk, flag, input.length);
+    for (int i = 0; i < after.length; i++) {
+        if (trunk[flag] < after[i]) {
+            int temp = trunk[flag];
+            int nextIndex = getIndexFromTrunk(after[i]);
+            trunk[flag] = after[i];
+            trunk[nextIndex] = temp;
+            Arrays.sort(trunk, flag + 1, trunk.length);
+            break;
+        }
+    }
+  }
+
+  private int getIndexFromTrunk(int data) {
+    for (int i = 0; i < input.length; i++) {
+        if (trunk[i] == data) {
+            return i;
+        }
+    }
+    return -1;
+  }
+
+  private double[] getOneSort(int[] indexTrunk) {
+    int length = input.length;
+    double[] oneSort = new double[length];
+    for (int i = 0; i < length; i++) {
+        oneSort[i] = input[indexTrunk[i]];
+    }
+    return oneSort;
+  }
+
+  private int forward() {
+    int[] temp = trunk.clone();
+    int flag = input.length - 2;
+    while (true) {
+        int[] before = Arrays.copyOfRange(temp, flag, input.length);
+        if (trunk[flag] == getMaxValue(before)) {
+            flag--;
+            if (flag < 0) {
+                break;
+            }
+        }
+        else {
+            break;
+        }
+    }
+    return flag;
+  }
+
+  private int getMaxValue(int[] array) {
+    Arrays.sort(array);
+    return array[array.length - 1];
+  }
+
+  private String find24Result(ArrayList<double[]> allSort) {
+    int[] symbol = new int[input.length - 1];
+    for (int i = 0; i < allSort.size(); i++) {
+        for (int pos2 = 0; pos2 < 4; pos2++) {
+            for (int pos1 = 0; pos1 < 4; pos1++) {
+                for (int pos0 = 0; pos0 < 4; pos0++) {
+                    symbol[0] = pos0;
+                    symbol[1] = pos1;
+                    symbol[2] = pos2;
+                    double[] data = allSort.get(i);
+                    double result = 0;
+                    for (int braceType = 0; braceType < 4; braceType++) {
+                        result = calculate(data, symbol, braceType);
+                        if (result == 24) {
+                            return getEquationStr(data, symbol, braceType);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return "No answer!";
+  }
+
+  private String getEquationStr(double[] data, int[] symbol, int braceType) {
+    String result = "";
+    for (int i = 0; i < data.length - 1; i++) {
+        if (i == 0) {
+            result = "," + data[i] + ",";
+        }
+        switch (symbol[i]) {
+        case 0:
+            result += " + ," + data[i + 1] + ",";
+            break;
+        case 1:
+            result += " - ," + data[i + 1] + ",";
+            break;
+        case 2:
+            result += " * ," + data[i + 1] + ",";
+            break;
+        case 3:
+            result += " / ," + data[i + 1] + ",";
+            break;
+        }
+    }
+    String[] a = result.trim().split(",");
+    switch (braceType) {
+    case 0:
+        result = "((("+a[1]+a[2]+a[3]+")"+a[4]+a[5]+")"+a[6]+a[7]+")";
+        break;
+    case 1:
+        result = "(("+a[1]+a[2]+a[3]+")"+a[4]+"("+a[5]+a[6]+a[7]+"))";
+        break;
+    case 2:
+        result = "("+a[1]+a[2]+"("+a[3]+a[4]+"("+a[5]+a[6]+a[7]+")))";
+        break;
+    case 3:
+        result = "("+a[1]+a[2]+"(("+a[3]+a[4]+a[5]+")"+a[6]+a[7]+"))";
+        break;
+    }
+    return result;
+  }
+
+  private double calculate(double[] data, int[] symbol, int braceType) {
+    double result = 0f;
+    if (braceType == 0) {
+        for (int i = 0; i < data.length - 1; i++) {
+            if (i == 0) {
+                result = data[i];
+            }
+            switch (symbol[i]) {
+            case 0:
+                result = result + data[i + 1];
+                break;
+            case 1:
+                result = result - data[i + 1];
+                break;
+            case 2:
+                result = result * data[i + 1];
+                break;
+            case 3:
+                result = result / data[i + 1];
+                break;
+            }
+        }
+    }
+    else if (braceType == 1) {
+        double result1 = 0, result2 = 0;
+        // step1
+        result1 = data[0];
+        switch (symbol[0]) {
+        case 0:
+            result1 = result1 + data[1];
+            break;
+        case 1:
+            result1 = result1 - data[1];
+            break;
+        case 2:
+            result1 = result1 * data[1];
+            break;
+        case 3:
+            result1 = result1 / data[1];
+            break;
+        }
+        // step2
+        result2 = data[2];
+        switch (symbol[2]) {
+        case 0:
+            result2 = result2 + data[3];
+            break;
+        case 1:
+            result2 = result2 - data[3];
+            break;
+        case 2:
+            result2 = result2 * data[3];
+            break;
+        case 3:
+            result2 = result2 / data[3];
+            break;
+        }
+        // step3
+        switch (symbol[1]) {
+        case 0:
+            result = result1 + result2;
+            break;
+        case 1:
+            result = result1 - result2;
+            break;
+        case 2:
+            result = result1 * result2;
+            break;
+        case 3:
+            result = result1 / result2;
+            break;
+        }
+    }
+    else if (braceType == 2) {
+        double result1 = 0, result2 = 0;
+        // step1
+        result1 = data[2];
+        switch (symbol[2]) {
+        case 0:
+            result1 = result1 + data[3];
+            break;
+        case 1:
+            result1 = result1 - data[3];
+            break;
+        case 2:
+            result1 = result1 * data[3];
+            break;
+        case 3:
+            result1 = result1 / data[3];
+            break;
+        }
+        // step2
+        result2 = data[1];
+        switch (symbol[1]) {
+        case 0:
+            result2 = data[1] + result1;
+            break;
+        case 1:
+            result2 = data[1] - result1;
+            break;
+        case 2:
+            result2 = data[1] * result1;
+            break;
+        case 3:
+            result2 = data[1] / result1;
+            break;
+        }
+        // step3
+        switch (symbol[0]) {
+        case 0:
+            result = data[0] + result2;
+            break;
+        case 1:
+            result = data[0] - result2;
+            break;
+        case 2:
+            result = data[0] * result2;
+            break;
+        case 3:
+            result = data[0] / result2;
+            break;
+        }
+    }
+    else if (braceType == 3) {
+        double result1 = 0;
+        // step1
+        result1 = data[1];
+        switch (symbol[1]) {
+        case 0:
+            result1 = result1 + data[2];
+            break;
+        case 1:
+            result1 = result1 - data[2];
+            break;
+        case 2:
+            result1 = result1 * data[2];
+            break;
+        case 3:
+            result1 = result1 / data[2];
+            break;
+        }
+        // step2
+        switch (symbol[2]) {
+        case 0:
+            result1 = result1 + data[3];
+            break;
+        case 1:
+            result1 = result1 - data[3];
+            break;
+        case 2:
+            result1 = result1 * data[3];
+            break;
+        case 3:
+            result1 = result1 / data[3];
+            break;
+        }
+        // step3
+        switch (symbol[0]) {
+        case 0:
+            result = data[0] + result1;
+            break;
+        case 1:
+            result = data[0] - result1;
+            break;
+        case 2:
+            result = data[0] * result1;
+            break;
+        case 3:
+            result = data[0] / result1;
+            break;
+        }
+    }
+    if (Math.abs(result - 24) < PRECISION) {
+        result = 24;
+    }
+    return result;
+  }
+
+  /* for Dos */
+  public static void mainDemo(String[] agrs) {
+    BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+    BufferedWriter stdout = new BufferedWriter(new OutputStreamWriter(System.out));
+    String in = "";
+    while (true) {
+        try {
+            stdout.write("Please input 4 number split with space: e.g. 3 3 8 8\ntype\"exit\" to quit.\n");
+            stdout.flush();
+            in = stdin.readLine();
+            if (in.equalsIgnoreCase("exit")) {
+                System.exit(1); //ip.dispose();
+            }
+            String[] inputArr = in.split(" ");
+            stdout.flush();
+            double input[] = new double[4];
+            try {
+                for (int i = 0; i < 4; i++) {
+                    input[i] = Long.parseLong(inputArr[i]);
+                }
+            } catch (Exception e) {
+                stdout.write("Input Error!\n");
+                continue;
+            }
+            Cal24 cal24 = new Cal24(input);
+            ArrayList<double[]> allSort = cal24.getAllSort();
+            String result = cal24.find24Result(allSort);
+            stdout.write("Result: " + result + "\n");
+        } catch (IOException e) {
+        }
+    }
+  }
+  
+  private static String FillText(String s)
+  {
+    String t = ""; 
+    s = s.replace(" ",",");
+    s = s.replace(",,",",");
+    for(int i=0;i<s.length();i++)
+    {
+    	t += s.substring(i,i+1);
+    	if((i+1)<s.length()) t+= ",";
+    	// JQKA=11,12,13,1
+    }
+    t = t.replace(",,,",",");
+    t = t.replace(",,",",");
+    return t;
+  }
+  
+  public static void calcu(String myForm) {
+      
+    final Frame f;  
+    f = new Frame(myForm); //Dialog
+    f.addWindowListener(new WindowAdapter() { 
+      public void windowClosing(WindowEvent e) { 
+        if(closeForm){
+          System.exit(0); 
+        } else {
+        	f.dispose(); 
+        }
+      } 
+    }); 
+    f.setSize(new Dimension(150, 92)); 
+    f.setLocation(240,240);
+    final Label l = new Label("请输入(如:3,3,8,8或3388)"); f.add(l,"North"); 
+    final TextField t = new TextField();                   f.add(t,"Center"); 
+	  final Button b = new Button("计算24...");              f.add(b,"South"); 
+	  
+    b.addActionListener(new ActionListener() { 
+      public void actionPerformed(ActionEvent e) { 
+        
+        Button b = (Button)e.getSource();
+        if(b.getLabel().equals("Again")) {
+        	
+        	l.setText("请输入(如:3,3,8,8或3388)");
+        	((Button)e.getSource()).setLabel("计算24...");
+        	t.setText("");
+        	t.setEnabled(true);
+        	
+        } else {
+        	
+          String s = FillText(t.getText());
+          String[] a = s.split(",");
+          double d[] = new double[4];
+          try {
+              for (int i = 0; i < 4; i++) {
+                  d[i] = Long.parseLong(a[i]);
+              }
+          } catch (Exception ex) {
+              t.setText("Input Error!"); 
+          }
+          
+          Cal24 cal24 = new Cal24(d);
+          ArrayList<double[]> as = cal24.getAllSort();
+          String res = cal24.find24Result(as);
+          res = res.replace(".0","");
+          
+          l.setText("计算:"+s);
+          t.setText(res);  
+          t.setEnabled(false);
+          ((Button)e.getSource()).setLabel("Again"); 
+          
+        }        
+      } 
+    }); 
+
+	  f.setVisible(true); 
+  }
+  
+  public static void main(String[] agrs) {
+  	
+  	//creatForm=true;
+  	closeForm=true;
+  	calcu("计算24");
+	  
+	  /*  	
+    double[] input = { 4, 5, 6, 7 }; 
+    Cal24 cal24 = new Cal24(input);
+    ArrayList<double[]> allSort = cal24.getAllSort(); 
+    String result = cal24.find24Result(allSort); 
+    System.out.println("Result: " + result + "\n");
+    */
+  }
+    
+}
+
+/*
+  同事在讨论面试，讨论到了微软的那个经典面试，3 3 8 8计算24，然后又突发奇想，写个程序，让电脑来计算24，马克思说过，人嘛，自己不行，就寻求劳动工具。从此自虐的过程开始。后悔以后我千万不要再突发奇想了。
+    难点1：如何遍历4个数字的所有排列组合
+    难点2：如何遍历所有 + - * /
+    难点2不是问题，四重循环轻松搞定，关键就是在如何列出所有的排列组合上了。当然4重循环也可以搞定，但是觉得太简单，最重要的原因是不利于程序扩展，如果以后程序要改成7个数字计算100，那程序改动将很大。想到了递归，但是个人实在是，脑细胞死光了也不知道最后一层递归怎么写。最后决定用无限循环+标志位来实现。当然也可以传个参数n!来限定循环的次数，但是我有标志位，就不用了，程序会自己跳出来。
+    这个算法还真不好写啊，首先，要保证我自己列4个数的排列组合的时候不能出错-_-||
+    核心算法是 1 flag记录当前固定的位置，默认指向末尾的数；2 flag向前移动； 3 当前组合保存进ArrayList； 4 flag以后的数字升序排列 5 flag指向的数字与下一个需要交换的数字交换；6 flag以后的数字们再升序排列；7 flag 返回到最末尾。无限循环，直到flag=-1。最难的地方就是flag如何正确前移，和正确得到要交换的数字。具体过程就一部周末血泪史，一直搞到昨晚2点。还考虑到了加括号的情况。当然，加括号如果程序要扩展就要自己加情况了。我还没有想好，如何遍历所有的可能的括号的情况。也千万不要再要求我根据先乘除后加减的方式正确加括号，实在累的不行了，我的一个周末都搞到这个程序里了。
+    花絮：写好了当然要爽一爽，随便搞几个，么有问题！来几个难的： 7733 7744 也没有问题 开始3388 nnd程序说无解。查了半天，3388算出结果有一个是24.000000...001的时候判断出不是24.微软就是微软，3388程序算考虑的问题都比较多。
+    需要改进：1 当然是列出所有排列组合的情况，觉得自己写的不如递归有效率，这个是程序开销最大的地方。2 计算24 有时候明显得不出24的情况就直接跳掉，后面就不用算了。3 如何遍历所有括号还没有想好，现在是写死在程序里的。
+    大家可以去http://pickup.mofile.com/5747012680889965提取文件，自己也和电脑比一比谁快。顺便看看有没有情况你算出来了电脑说无解。基于jre1.6.0_03开发，要有java环境才能运行。建议用java -jar Cal24.jar来运行。那个bat能用，但是有点问题，看看大家能不能发现。
+    肯定有人要看看看我的代码，贴出来吧，注释很少。如果有更好的算法，或者我的算法有什么问题，或者有什么bug，或者我写程序有么有什么坏习惯，麻烦告诉我，共同进步嘛：
+http://hi.baidu.com/wolf_m/blog/item/b5ff9913251b00846438db3c.html
+
+*/
+
+
+
+/*******************************************************************************
+ File : \src\module\puzzler\CMath.java 
+*******************************************************************************/
+package module.puzzler;
+import begin.*;
+
+import  java.awt.*;  
+import  java.awt.event.*;  
+import  javax.swing.*;  
+import  java.util.Vector;  
+// http://diary.goodmood.cn/2008/1017/0_192746.html
+
+public  class  CMath  
+{  
+   
+  private static boolean closeForm=false;
+  private String sysLine = System.getProperty("line.separator");
+  static JTextArea sysArea = PeaceBox.sysEditor;
+   
+  String  str1="0";  //运算数1  初值一定为0  为了程序的安全  
+  String  str2="0";  //运算数2  
+  String  fh="+";  //运算符  
+  String  jg="";//结果  
+  
+  //状态开关  重要  
+  int  k1=1;//开关1  用于选择输入方向  将要写入str2或  str2  
+  int  k2=1;//开关2  符号键  次数  k2>1说明进行的是2+3-9+8  这样的多符号运算  
+  int  k3=1;//开关3  str1  是否可以被清0  ==1时可以  !=1时不能被清0  
+  int  k4=1;//开关4  str2  同上  
+  int  k5=1;//开关5  控制小数点可否被录入  ==1时可以  !=1  输入的小数点被丢掉  
+  JButton  jicunqi;  //寄存器  记录  是否连续按下符号键  
+  Vector  vt=new  Vector(20,10);  
+  
+  JFrame  frame=new  JFrame("sunshine---计算器");  
+  JTextField  jg_TextField=new  JTextField(jg,20);//20列  
+  JButton  clear_Button=new  JButton("清除");  
+  JButton  button0=new  JButton("0");  
+  JButton  button1=new  JButton("1");  
+  JButton  button2=new  JButton("2");  
+  JButton  button3=new  JButton("3");  
+  JButton  button4=new  JButton("4");  
+  JButton  button5=new  JButton("5");  
+  JButton  button6=new  JButton("6");  
+  JButton  button7=new  JButton("7");  
+  JButton  button8=new  JButton("8");  
+  JButton  button9=new  JButton("9");  
+  JButton  button_Dian=new  JButton(".");  
+  JButton  button_jia=new  JButton("+");  
+  JButton  button_jian=new  JButton("-");  
+  JButton  button_cheng=new  JButton("*");  
+  JButton  button_chu=new  JButton("/");  
+  JButton  button_dy=new  JButton("=");  
+  ////////////////////////////////////////////////////////////////////////  
+  public  static  void  main(String[]  args)  
+  {  
+    closeForm = true;
+    CMath c = new CMath();  
+  }  
+  
+  public static void Calcu()  
+  {  
+    CMath c = new CMath();  
+  }  
+  
+  
+  /////////////////////////////////////////////////////////////////////////  
+  CMath()  
+  {  
+  button0.setMnemonic(KeyEvent.VK_0);//等效键  
+  //其它  等效键  略,  
+  
+  jg_TextField.setHorizontalAlignment(JTextField.RIGHT  );//文本框  右对齐  
+  
+  JPanel  pan=new  JPanel();  
+  pan.setLayout(new  GridLayout(4,4,5,5));//四行四列  边距为5像素  
+  pan.add(button7);  
+  pan.add(button8);  
+  pan.add(button9);  
+  pan.add(button_chu);  
+  pan.add(button4);  
+  pan.add(button5);  
+  pan.add(button6);  
+  pan.add(button_cheng);  
+  pan.add(button1);  
+  pan.add(button2);  
+  pan.add(button3);  
+  pan.add(button_jian);  
+  pan.add(button0);  
+  pan.add(button_Dian);  
+  pan.add(button_dy);  
+  pan.add(button_jia);  
+  pan.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));//pan对象的边距  
+  
+  JPanel  pan2=new  JPanel();  
+  pan2.add(jg_TextField);  
+  
+  
+  JPanel  pan3=new  JPanel();  //为什么要  多此一句呢？  因为我不会设置  按钮的大小  
+  pan3.setLayout(new  FlowLayout());  
+  pan3.add(clear_Button);  
+  //clear_Button.setSize(10,10);//设置清零按钮的大小  吗的  不好使  ！！  
+  
+  frame.setLocation(300,  200);  //主窗口  出现在位置  
+  frame.setResizable(false);  //不能调大小  
+  frame.getContentPane().setLayout(new  BorderLayout());  
+  frame.getContentPane().add(pan2,BorderLayout.NORTH);  
+  frame.getContentPane().add(pan,BorderLayout.CENTER);  
+  frame.getContentPane().add(pan3,BorderLayout.SOUTH);  
+  
+  
+  frame.pack();  
+  frame.setVisible(true);  
+  
+  
+  //以上是  控件  和  布局  
+  //下面是事件处理  程  序  
+  
+  //---------------  数  字  键  ----------------  
+  class  JianTing  implements  ActionListener  
+  {  
+  public  void  actionPerformed(ActionEvent  e)  
+  {  
+  String  ss=((JButton)e.getSource()).getText();  
+  jicunqi=(JButton)e.getSource();  
+  vt.add(jicunqi);  
+  if  (k1==1)  
+  {  
+  if(k3==1)  
+  {  
+  str1="";  
+  k5=1;//还原开关k5状态  
+  }  
+  str1=str1+ss;  
+  //k2=1;  
+  k3=k3+1;  
+  //System.out.println(str1);  
+  jg_TextField.setText(str1);//显示  
+  
+  }  
+  else  if(k1==2)  
+  {  
+  if  (k4==1)  
+  {  
+  str2="";  
+  k5=1;  //还原开关k5状态  
+  }  
+  str2=str2+ss;  
+  //k2=2;  
+  k4=k4+1;  
+  ///////////////测试////////////////  
+  jg_TextField.setText(str2);  
+  }  
+  
+  
+  
+  
+  }  
+  }  
+  
+  //－－－－－－－－符  号－－－－－－－－－－－  
+  class  JianTing_fh  implements  ActionListener  
+  {  
+  public  void  actionPerformed(ActionEvent  e)  
+  {  
+  String  ss2=((JButton)e.getSource()).getText();  
+  jicunqi=(JButton)e.getSource();  
+  vt.add(jicunqi);  
+  
+  if(k2==1)  
+  {  
+  k1=2;//开关  k1  为1时,向数1写  为2时，向数2写  
+  k5=1;  
+  fh=ss2;  
+  k2=k2+1;//按符号键的次数  
+  }  
+  else  
+  {  
+  int  a=vt.size();  
+  JButton  c=(JButton)vt.get(a-2);  
+  
+  if(!(c.getText().equals("+"))&&!(c.getText().equals("-"))&&!(c.getText().equals("*"))&&!(c.getText().equals("/")))  
+  //if(!(vt.get(a-2).getText().equals("-"))||!(vt.get(a-2).getText().equals("+"))||!(vt.get(a-2).getText().equals("*"))||!(vt.get(a-2).getText().equals("/")))  
+  {  yuns();  
+  str1=jg;  
+  k1=2;//开关  k1  为1时,向数1写  为2时，向数2写  
+  k5=1;  
+  k4=1;  
+  fh=ss2;  
+  }  k2=k2+1;  
+  
+  }  
+  
+  }  
+  }  
+  
+  //－－－－－－－－清除－－－－－－－  
+  class  JianTing_clear  implements  ActionListener  
+  {  
+  public  void  actionPerformed(ActionEvent  e)  
+  {  
+  jicunqi=(JButton)e.getSource();  
+  vt.add(jicunqi);  
+  k5=1;  
+  k2=1;  
+  k1=1;  
+  k3=1;  
+  k4=1;  
+  str1="0";  
+  str2="0";  
+  fh="";  
+  jg="";  
+  jg_TextField.setText(jg);  
+  vt.clear();  
+  sysArea.setText("");
+  }  
+  }  
+  
+  //----------------等  于  ---------------------  
+  class  JianTing_dy  implements  ActionListener  
+  {  
+  public  void  actionPerformed(ActionEvent  e)  
+  {  
+  
+  jicunqi=(JButton)e.getSource();  
+  vt.add(jicunqi);  
+  yuns();  
+  k1=1;  //还原开关k1状态  
+  //str1=jg;  
+  k2=1;  
+  k3=1;//还原开关k3状态  
+  k4=1;  //还原开关k4状态  
+  
+  str1=jg;  //为7+5=12  +5=17  这种计算做准备  
+  }  
+  }  
+  //----------------小数点  ---------------------  
+  class  JianTing_xiaos  implements  ActionListener  
+  {  
+  public  void  actionPerformed(ActionEvent  e)  
+  {  
+  jicunqi=(JButton)e.getSource();  
+  vt.add(jicunqi);  
+  if(k5==1)  
+  {  
+  String  ss2=((JButton)e.getSource()).getText();  
+  if  (k1==1)  
+  {  
+  if(k3==1)  
+  {  
+  str1="";  
+  k5=1;  //还原开关k5状态  
+  }  
+  str1=str1+ss2;  
+  //k2=1;  
+  k3=k3+1;  
+  //System.out.println(str1);  
+  jg_TextField.setText(str1);//显示  
+  
+  
+  }  
+  else  if(k1==2)  
+  {  
+  if  (k4==1)  
+  {  
+  str2="";  
+  k5=1;  //还原开关k5状态  
+  }  
+  str2=str2+ss2;  
+  //k2=2;  
+  k4=k4+1;  
+  ///////////////测试////////////////  
+  jg_TextField.setText(str2);  
+  }  
+  }  
+  
+  k5=k5+1;  //  
+  }  
+  }  
+  
+  
+  //注册  监听器  
+  JianTing_dy  jt_dy=new  JianTing_dy();  
+  JianTing  jt=  new  JianTing();//临听数字键  
+  JianTing_fh  jt_fh=  new  JianTing_fh();//临  听符  号键  
+  JianTing_clear  jt_c=new  JianTing_clear();  //清除键  
+  JianTing_xiaos  jt_xs=new  JianTing_xiaos();//  小数点  键  
+  
+  
+  button7.addActionListener(jt);  
+  button8.addActionListener(jt);  
+  button9.addActionListener(jt);  
+  button_chu.addActionListener(jt_fh);  
+  button4.addActionListener(jt);  
+  button5.addActionListener(jt);  
+  button6.addActionListener(jt);  
+  button_cheng.addActionListener(jt_fh);  
+  button1.addActionListener(jt);  
+  button2.addActionListener(jt);  
+  button3.addActionListener(jt);  
+  button_jian.addActionListener(jt_fh);  
+  button0.addActionListener(jt);  
+  button_Dian.addActionListener(jt_xs);  
+  button_dy.addActionListener(jt_dy);  
+  button_jia.addActionListener(jt_fh);  
+  clear_Button.addActionListener(jt_c);  
+  
+  //关闭事件处理程序  
+  frame.addWindowListener(new  WindowAdapter()  
+  {  
+  public  void  windowClosing(WindowEvent  e)  
+  {  
+    if(closeForm){
+      System.exit(0); 
+    } else {
+    	frame.dispose(); 
+    }
+    //System.exit(0);  
+  }  
+  });  
+  
+  
+  }  
+  
+  //---------------计  算------------------  
+  public  void  yuns()  
+  {  
+  double  a2;//运算数1  
+  double  b2;//运算数2  
+  String  c=fh;//  运算符  
+  double  jg2=0  ;//结果  
+  
+  if  (c.equals(""))  
+  {  
+  //System.out.println("请输入运算符");  
+  jg_TextField.setText("请输入运算符");  
+  
+  }  
+  else  
+  {  
+  
+  sysArea.append("str1:"+str1+sysLine);//System.out.println("str1:"+str1);//调试时  使  用  
+  sysArea.append("str2:"+str2+sysLine);//System.out.println("str2:"+str2);//调试时  使  用  
+  sysArea.append("运算符:"+fh+sysLine);//System.out.println("运算符:"+fh);//调试时  使  用  
+  if  (str1.equals("."))  //字符串  "."  转换成double型数据时  会出错  所以手工转  
+  str1="0.0";  
+  if  (str2.equals("."))  
+  str2="0.0";  
+  a2=Double.valueOf(str1).doubleValue();  
+  b2=Double.valueOf(str2).doubleValue();  
+  
+  sysArea.append("double型的a2："+a2+sysLine);//System.out.println("double型的a2："+a2);  //调试时  使  用  
+  sysArea.append("double型的b2："+b2+sysLine);//System.out.println("double型的b2："+b2);  //调试时  使  用  
+  
+  
+  if  (c.equals("+"))  
+  {  
+  jg2=a2+b2;  
+  }  
+  if  (c.equals("-"))  
+  {  
+  jg2=a2-b2;  
+  }  
+  if  (c.equals("*"))  
+  {  
+  jg2=a2*b2;  
+  }  
+  if  (c.equals("/"))  
+  {  
+  if(b2==0)  
+  {  
+  jg2=0;//0000000000000  by  0  cu!  
+  }  
+  else  
+  {  
+  jg2=a2/b2;  
+  }  
+  
+  
+  }  
+  
+  sysArea.append("double型a2"+fh+"b2结果："+jg2+sysLine); //System.out.println("double型a2"+fh+"b2结果："+jg2);  
+  
+  sysArea.append(sysLine);//System.out.println();  
+  jg=((new  Double(jg2)).toString());  
+  
+  jg_TextField.setText(jg);  
+  }  
+  }  
+}
+
+
+/*******************************************************************************
+ File : \src\module\puzzler\Prime.java 
+*******************************************************************************/
+package module.puzzler;
+import begin.*;
+
+public class Prime {
+	
+  static String sysLine = System.getProperty("line.separator");
+
+  Prime() {
+  	;
+  }
+
+  public static void main(String[] agrs) {
+  	String s = getList(1, 100);
+  	s = s.replace(sysLine," ");
+    s = s.replace(" All:",sysLine);
+    System.out.print(s);
+    System.out.println("");
+    System.out.print(sysLine+getSup(10000,99999,2));
+    System.out.print(sysLine+getSup(200000,399999,1));
+  }
+  
+  public static String getSup(int n1,int n2,int f) {
+  	String s="";
+  	int n=0;
+  	boolean b;
+  	if(n1%2==0) n1++;
+  	for(int i=n1;i<=n2;i=i+2) { 
+  	  if(f==1) b = isSup1(i);
+  	  else b = isSup2(i);
+  	  if(b) {
+  	    s += i+sysLine; 
+  	    n++;
+  	  }
+  	}
+  	return s+"All:"+n+sysLine;
+  }
+  
+  public static String getSup(int f) {
+  	String s="";
+  	int n=0;
+  	boolean b;
+  	for(int i=100001;i<=999999;i=i+2) { 
+  	  if(f==1) b = isSup1(i);
+  	  else b = isSup2(i);
+  	  if(b) {
+  	    s += i+sysLine; 
+  	    n++;
+  	  }
+  	}
+  	return s+"All:"+n+sysLine;
+  }
+   
+  public static String getList(int a, int b) {
+  	String s = "";
+  	int n = 0;
+  	for(int i=a;i<=b;i++) {
+  	  if(isPrime(i)){
+  	    s += i+sysLine; 
+  	    n++;
+  	  }
+  	}
+  	return s+"All:"+n;
+  } 
+  
+  public static boolean isSup2(int i) {
+  	String t = Integer.toString(i);
+  	int k = t.length(); 
+  	int[] a = new int[k];   
+  	int n1,n2,n3,n4,n5,n6;
+  	for(int j=0;j<k;j++) { 
+  		a[j] = Integer.valueOf(t.substring(j,j+1));
+  	}
+  	n1 = Integer.valueOf(a[0]);
+  	if(isPrime(n1)) {
+  	n2 = Integer.valueOf(a[0]+""+a[1]);
+  	if(isPrime(n2)) {
+  	n3 = Integer.valueOf(a[0]+""+a[1]+""+a[2]); //abc
+  	if(isPrime(n3)) {
+  	n4 = Integer.valueOf(a[0]+""+a[1]+""+a[2]+""+a[3]);	
+  	if(isPrime(n4)) {
+  	n5 = Integer.valueOf(a[0]+""+a[1]+""+a[2]+""+a[3]+""+a[4]);
+  	if(isPrime(n5)) {
+  	if(isPrime(i)) {
+  	            return true;
+  	} } } } } }
+  	return false;
+  } //规则2: abcdef六位数素数; a,ab,abc,abcd,abcde组成5个素数; 
+   
+  public static boolean isSup1(int i) {
+  	String t = Integer.toString(i);
+  	int k = t.length(); 
+  	int[] a = new int[k];   
+  	int n1,n2,n3,n4,n5,n6;
+  	for(int j=0;j<k;j++) { 
+  		a[j] = Integer.valueOf(t.substring(j,j+1));
+  	}
+  	n1 = Integer.valueOf(a[0]+""+a[1]+""+a[2]);
+  	n2 = Integer.valueOf(a[3]+""+a[4]+""+a[5]);
+  	if(isPrime(n1)) {
+  	if(isPrime(n2)) {
+  	    n1 = Integer.valueOf(a[0]+""+a[1]);
+  	    n2 = Integer.valueOf(a[2]+""+a[3]);
+  	    n3 = Integer.valueOf(a[4]+""+a[5]);
+  	    if(isPrime(n1)) {
+  	    if(isPrime(n2)) {
+  	    if(isPrime(n3)) {   
+  	          if(isPrime(i)) {
+  	              return true;
+  	          }
+  	    } } }
+  	} }
+    return false;
+  } //规则1: abcdef六位数素数; abc,def组成2个3位数素数; ab,cd,ef组成3个2位数素数。
+ 
+  
+  private static boolean isPrime(int x)
+  {
+  	boolean b = true;
+  	if(x<2) return false;
+  	if(x==2) return true;
+  	int m = (int)Math.pow(x,0.5d);
+  	for(int i=2;i<=m;i++)
+  	{
+  		if((x%i)==0) return false;
+  	}
+  	return b;
+  }
+    
+}
+
+
+
+
+/*******************************************************************************
+ File : \src\module\puzzler\Solver.java 
+*******************************************************************************/
+package module.puzzler;
+import begin.*;
+
+/**
+* 求解Sodoku SuPuz的工具类
+* @author Eastsun
+*/
+public class Solver
+{
+  protected static final int SIZE = SuPuz.SIZE;
+  protected static String sysLine = System.getProperty("line.separator");
+  //避免生成该类实例
+  protected Solver(){
+  }
+  public static boolean solve(SuPuz p)
+  {
+    int[][] num =new int[SIZE][SIZE];
+    boolean[][] rFlags =new boolean[SIZE][SIZE+1],
+    cFlags =new boolean[SIZE][SIZE+1],
+    zFlags =new boolean[SIZE][SIZE+1];
+    for(int r=0;r<SIZE;r++)
+    for(int c=0;c<SIZE;c++)
+    if(p.isFixed(r,c)){
+      int t =p.getNumber(r,c);
+      num[r][c] =t;
+      rFlags[r][t] =true;
+      cFlags[c][t] =true;
+      zFlags[r/3*3+c/3][t] =true;
+    }
+    int r =0,c =0;
+    outLoop:
+    for(;;){//&#
+      if(p.isFixed(r,c)){
+        c ++;
+        if(c>=SIZE){
+          c =0;
+          r ++;
+          if(r>=SIZE) break outLoop;
+        }
+        continue outLoop;
+      } //&#if(p.isFixed())
+      int t =SIZE;
+      for(c++;;){//&#
+        if(t>=SIZE){
+        c --;
+        if(c<0){
+        c =SIZE -1;
+        r --;
+        if(r<0) break outLoop;
+        }
+        if(p.isFixed(r,c)) continue;
+        t =num[r][c];
+        if(t!=0){
+        rFlags[r][t] =false;
+        cFlags[c][t] =false;
+        zFlags[r/3*3+c/3][t] =false;
+        num[r][c] =0;
+        }
+        } else {
+      t ++;
+      if(!(rFlags[r][t]||
+      cFlags[c][t]||
+      zFlags[r/3*3+c/3][t])
+      ) break;
+        }
+      }//&#for(c++;;);
+      num[r][c] =t;
+      rFlags[r][t] =true;
+      cFlags[c][t] =true;
+      zFlags[r/3*3+c/3][t] =true;
+      c ++;
+      if(c>=SIZE){
+      c =0;
+      r ++;
+      if(r>=SIZE) break outLoop;
+      }
+    }
+    if(r<0) return false;
+    for(r=0;r<SIZE;r++)
+      for(c=0;c<SIZE;c++)
+        if(!p.isFixed(r,c)) p.setNumber(r,c,num[r][c]);
+    return true;
+  }
+    //test
+  public static void main(String[] args){
+    SuPuz p =new SuPuz();
+    int[][] data ={
+      {0,0,0, 0,0,4, 0,7,6},
+      {8,0,1, 0,0,0, 0,3,0},
+      {0,4,6, 0,0,3, 0,0,0},
+      
+      {0,0,0, 0,2,0, 7,0,1},
+      {1,0,0, 7,0,6, 0,0,5},
+      {5,0,7, 0,3,0, 0,0,0},
+      
+      {0,0,0, 9,0,0, 8,1,0},      
+      {0,5,0, 0,0,0, 2,0,4},      
+      {9,1,0, 8,0,0, 0,0,0}       
+    };
+    p.setSuPuz(data);
+    System.out.println(solve(p));
+    for(int r=0;r<SIZE;r++){
+      for(int c=0;c<SIZE;c++) System.out.print(p.getNumber(r,c)+" ");
+        System.out.println();
+    }
+  }
+  
+  public static String getTab(int[][] data) {
+    String s = "";
+    SuPuz p =new SuPuz();
+    p.setSuPuz(data);
+    boolean f = solve(p);
+    for(int r=0;r<SIZE;r++) {
+      if((r==0)||(r==3)||(r==6)) s += sysLine;
+      for(int c=0;c<SIZE;c++) { 
+      	if((c==0)||(c==3)||(c==6)) s += " ";
+      	s += p.getNumber(r,c)+" ";
+      }
+      s += sysLine;
+    }
+    return f+":"+sysLine+s;
+  }
+  
+  public static int[][] getData(String s) {
+      int[][] d = new int[9][9];
+      int a=-1,b=-1;
+      String ch = "0";
+	  	//String s = sysEditor.getText();
+		  s = s.replace("\r\n","\r");
+		  s = s.replace("\n","\r");
+		  s = s.replace("\r\r","\r");
+      String[] arr = s.split("\r"); 
+      try {
+        for(int i=0;i<arr.length;i++) {
+          arr[i] = arr[i].replace(" ","").replace(",","");
+          arr[i] = arr[i].replace("-","0").replace("x","0").replace("X","0");
+          if(arr[i].length()>=9) {
+            a++; b=-1; //System.out.print(sysLine+"r"+a+":");
+            for(int j=0;j<arr[i].length();j++) {
+            	ch = arr[i].substring(j,j+1); 
+            	try {
+            	  b++;
+            	  d[a][b] = Integer.valueOf(ch);
+            	  //System.out.print("v"+b+":"+ch+" "); 
+            	} catch (Exception ex) {
+            		//System.out.print("x"+b+":"+ch+" ");
+            	}
+            }
+            //System.out.println(); 
+          }
+        }
+      } catch (Exception ex) {
+      	//sysEditor.setText("输入错误！");
+      }
+      return d;
+  }
+  
+}
+
+
+
+
+/*******************************************************************************
+ File : \src\module\puzzler\Sudoku.java 
+*******************************************************************************/
+package module.puzzler;
+import begin.*;
+
+public class Sudoku {
+ 
+ private static String sysLine = System.getProperty("line.separator");
+ 
+ // A,B,C,D,E,F,G,H,I;分别代表不同的九个区域
+ // A B C
+ // D E F
+ // G H I
+ 
+ // 生成的顺序为 A B D C G F H E I
+ static int A[][], B[][], C[][], D[][], E[][], F[][], G[][], H[][], I[][];
+
+ // 临时的变量的数组 用于存储生成的临时的区域的值 最后利用方法 getint1() 或 getint2()
+ // 将一维数组转换为二维数组 最终将生成的二维的数组赋值个相应的区域
+ static int temp[];
+
+ // tt1 3行3列
+ // tt2 6行3列
+ // tt3 6行6列
+ // 用于存储用于生成条件的特定数组
+ static int tt1[][], tt2[][], tt3[][];
+
+ // intT 临时变量 用于存储生成的随机数字和1-9的数字
+ // sum 临时变量 用于存储循环的次数 大于特定值(intSum)时 重新执行
+ // FHsum临时变量 用于(getFH()方法)存储循环的次数 大于特定值(intSum)时 重新执行
+ static int intT, sum, FHsum = 0;
+
+ // intT1 intT2 均为3行3列的数组 用于getFH()方法 记录每次生成的纪录的数字
+ // 用于判断生成的F H 数组是否符合要求(值均为4时才符合要求)
+ static int intI1[][], intI2[][];
+
+ // 特定值 用于控制执行的次数
+ static final int intSum = 40;
+
+ //构造方法
+ public Sudoku() {
+  temp = new int[9];
+  tt1 = new int[3][3];
+  tt2 = new int[6][3];
+  tt3 = new int[6][6];
+  I = new int[3][3];
+  E = new int[3][3];
+
+  getA();
+  getB();
+  getD();
+  getC();
+  getG();
+  getF();
+  getH();
+  
+  boolean b = false;
+  // 使用循环来得到数组 F H
+  while (getFH() == false) {
+   if (b) {
+    b = false;
+    getF();
+   } else {
+    b = true;
+    getH();
+   }
+  }
+  getE();
+  getI(); 	
+ }
+
+/*
+ public void fillTab() {
+
+ }
+ 
+ //控制程序的主方法
+ public void mainTest() {
+   //fillTab();
+   //printAll();
+ }
+ */
+
+ // 用于生成的数组不符合要求的时候 重新生成数组B D C G F H
+ public void mainTest1() {
+  getB();
+  getD();
+
+  getC();
+  getG();
+
+  getF();
+  getH();
+ }
+
+
+ // 生成数组 A
+ public void getA() {
+  sum = 0;
+  intT = 0;
+  
+  //生成的不重复的数组的值  将其赋值给temp临时数组
+  for (int i = 0; i < 9;) {
+   intT = (int) (Math.random() * 9 + 1);
+
+   //sum大于特定值时 重新生成自己本身 并将值全部清空为0
+   if (sum++ > intSum) {
+    intT = 0;
+    i = 0;
+    sum = 0;
+   }
+   for (int j = 0; j < i; j++) {
+    //判断生成的值是否已经存在 存在就赋值为0 退出本次循环
+    if (intT == temp[j] && i != 0) {
+     intT = 0;
+     break;
+    }
+   }
+   //判断生成的值是否出现过 不是0就是没有出现过 记录并循环生成下一个值
+   if (intT != 0) {
+    temp[i] = intT;
+    i++;
+   }
+  }
+  // System.out.println(sum + " A");
+  A = getint1(temp);//调用方法将一维数组转换为二维数组
+  // printInt(A);
+ }
+
+ // 生成数组 B
+ public void getB() {
+  sum = 0;
+  intT = 0;
+
+  //生成用于判读条件时的数组 并存储与临时变量tt1中
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt1[i][j] = A[i][j];
+   }
+  }
+
+  for (int i = 0; i < 9;) {
+   intT = (int) (Math.random() * 9 + 1);
+   if (sum++ > intSum) {
+    intT = 0;
+    i = 0;
+    sum = 0;
+   }
+   for (int j = 0; j < i; j++) {
+    //首先判断是否在本身的数组中出现过
+    if (intT == temp[j] && i != 0) {
+     intT = 0;
+     break;
+    }
+   }
+   
+   //循环判断条件
+   if (intT != 0) {
+
+    for (int k = 0; k < 3; k++) {
+     // 小于3 表示第一行 和数组第一行比较判断 出现过就重新生成数字 并退出本次循环
+     if (i < 3) {
+      if (intT == tt1[0][k]) {
+       intT = 0;
+       break;
+      }
+      //小于6 表示第一行 和数组第二行比较判断 出现过就重新生成数字 并退出本次循环
+     } else if (i < 6) {
+      if (intT == tt1[1][k]) {
+       intT = 0;
+       break;
+      }
+      //小于9 表示第一行 和数组第三行比较判断 出现过就重新生成数字 并退出本次循环
+     } else {
+      if (intT == tt1[2][k]) {
+       intT = 0;
+       break;
+      }
+     }
+    }
+    if (intT != 0) {
+     temp[i] = intT;
+     i++;
+    }
+
+   }
+  }
+  // System.out.println(sum + " B");
+  B = getint1(temp);
+  // printInt(B);
+
+ }
+
+ 
+ // 生成数组 D
+ public void getD() {
+  sum = 0;
+  intT = 0;
+
+  //同B
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt1[i][j] = A[j][i];
+   }
+  }
+
+  for (int i = 0; i < 9;) {
+   intT = (int) (Math.random() * 9 + 1);
+   if (sum++ > intSum) {
+    intT = 0;
+    i = 0;
+    sum = 0;
+   }
+   for (int j = 0; j < i; j++) {
+    if (intT == temp[j] && i != 0) {
+     intT = 0;
+     break;
+    }
+   }
+   if (intT != 0) {
+
+    for (int k = 0; k < 3; k++) {
+     if (i < 3) {
+      if (intT == tt1[0][k]) {
+       intT = 0;
+       break;
+      }
+     } else if (i < 6) {
+      if (intT == tt1[1][k]) {
+       intT = 0;
+       break;
+      }
+     } else {
+      if (intT == tt1[2][k]) {
+       intT = 0;
+       break;
+      }
+     }
+    }
+    if (intT != 0) {
+     temp[i] = intT;
+     i++;
+    }
+
+   }
+  }
+  // System.out.println(sum + " D");
+  D = getint2(temp);
+  // printInt(D);
+ }
+
+ 
+ // 生成数组 C
+ public void getC() {
+  sum = 0;
+  intT = 0;
+
+  //同B
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt2[i][j] = A[i][j];
+    tt2[i + 3][j] = B[i][j];
+   }
+  }
+
+  for (int i = 0; i < 9;) {
+   intT = (int) (Math.random() * 9 + 1);
+   if (sum++ > intSum) {
+    intT = 0;
+    i = 0;
+    sum = 0;
+   }
+   for (int j = 0; j < i; j++) {
+    if (intT == temp[j] && i != 0) {
+     intT = 0;
+     break;
+    }
+   }
+   if (intT != 0) {
+
+    for (int k = 0; k < 3; k++) {
+     if (i < 3) {
+      if (intT == tt2[0][k] || intT == tt2[3][k]) {
+       intT = 0;
+       break;
+      }
+     } else if (i < 6) {
+      if (intT == tt2[1][k] || intT == tt2[4][k]) {
+       intT = 0;
+       break;
+      }
+     } else {
+      if (intT == tt2[2][k] || intT == tt2[5][k]) {
+       intT = 0;
+       break;
+      }
+     }
+    }
+    if (intT != 0) {
+     temp[i] = intT;
+     i++;
+    }
+
+   }
+  }
+  // System.out.println(sum + " C");
+  C = getint1(temp);
+  // printInt(C);
+ }
+
+ 
+ // 生成数组 G
+ public void getG() {
+  sum = 0;
+  intT = 0;
+
+  //同B
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt2[i][j] = A[j][i];
+    tt2[i + 3][j] = D[j][i];
+   }
+  }
+  
+  for (int i = 0; i < 9;) {
+   intT = (int) (Math.random() * 9 + 1);
+   if (sum++ > intSum) {
+    intT = 0;
+    i = 0;
+    sum = 0;
+   }
+   for (int j = 0; j < i; j++) {
+    if (intT == temp[j] && i != 0) {
+     intT = 0;
+     break;
+    }
+   }
+   if (intT != 0) {
+
+    for (int k = 0; k < 3; k++) {
+     if (i < 3) {
+      if (intT == tt2[0][k] || intT == tt2[3][k]) {
+       intT = 0;
+       break;
+      }
+     } else if (i < 6) {
+      if (intT == tt2[1][k] || intT == tt2[4][k]) {
+       intT = 0;
+       break;
+      }
+     } else {
+      if (intT == tt2[2][k] || intT == tt2[5][k]) {
+       intT = 0;
+       break;
+      }
+     }
+    }
+    if (intT != 0) {
+     temp[i] = intT;
+     i++;
+    }
+
+   }
+  }
+  // System.out.println(sum + " G");
+  G = getint2(temp);
+  // printInt(G);
+ }
+
+ 
+ // 生成数组 F
+ public void getF() {
+  sum = 0;
+  intT = 0;
+
+  //同B
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt2[i][j] = D[i][j];
+    tt2[i + 3][j] = C[j][i];
+   }
+  }
+  for (int i = 0; i < 9;) {
+   intT = (int) (Math.random() * 9 + 1);
+   if (sum++ > intSum) {
+    intT = 0;
+    i = 0;
+    sum = 0;
+   }
+   for (int j = 0; j < i; j++) {
+    if (intT == temp[j] && i != 0) {
+     intT = 0;
+     break;
+    }
+   }
+   if (intT != 0) {
+
+    for (int k = 0; k < 3; k++) {
+     if (i < 3) {
+      if (intT == tt2[0][k] || intT == tt2[i + 3][k]) {
+       intT = 0;
+       break;
+      }
+     } else if (i < 6) {
+      if (intT == tt2[1][k] || intT == tt2[i][k]) {
+       intT = 0;
+       break;
+      }
+     } else {
+      if (intT == tt2[2][k] || intT == tt2[i - 3][k]) {
+       intT = 0;
+       break;
+      }
+     }
+    }
+    if (intT != 0) {
+     temp[i] = intT;
+     i++;
+    }
+
+   }
+  }
+  // System.out.println(sum + " F");
+  F = getint1(temp);
+  // printInt(F);
+ }
+
+ 
+ // 生成数组 H
+ public void getH() {
+  sum = 0;
+  intT = 0;
+
+  //同B
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt2[i][j] = G[i][j];
+    tt2[i + 3][j] = B[j][i];
+   }
+  }
+  for (int i = 0; i < 9;) {
+   intT = (int) (Math.random() * 9 + 1);
+   if (sum++ > intSum) {
+    intT = 0;
+    i = 0;
+    sum = 0;
+   }
+   for (int j = 0; j < i; j++) {
+    if (intT == temp[j] && i != 0) {
+     intT = 0;
+     break;
+    }
+   }
+   if (intT != 0) {
+
+    for (int k = 0; k < 3; k++) {
+     if (i < 3) {
+      if (intT == tt2[0][k] || intT == tt2[i + 3][k]) {
+       intT = 0;
+       break;
+      }
+     } else if (i < 6) {
+      if (intT == tt2[1][k] || intT == tt2[i][k]) {
+       intT = 0;
+       break;
+      }
+     } else {
+      if (intT == tt2[2][k] || intT == tt2[i - 3][k]) {
+       intT = 0;
+       break;
+      }
+     }
+    }
+    if (intT != 0) {
+     temp[i] = intT;
+     i++;
+    }
+
+   }
+  }
+  // System.out.println(sum + " H");
+  H = getint1(temp);
+  // printInt(H);
+ }
+
+ 
+ // 生成数组 E
+ public void getE() {
+  intT = 0;
+  
+  //临时数组intTemp用于生成存储1-9个数字
+  int intTemp[] = new int[9];
+  for (int i = 0; i < 9; i++) {
+   intTemp[i] = i + 1;
+  }
+  
+  //生成判断的条件
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt3[i][j] = D[i][j];
+    tt3[i][j + 3] = F[i][j];
+    tt3[i + 3][j] = B[j][i];
+    tt3[i + 3][j + 3] = H[j][i];
+   }
+  }
+
+  for (int i = 0; i < 9;)
+
+  {
+   for (int j = 0; j < 9; j++) {
+    intT = intTemp[j];
+    if (intT == 0) {
+     continue;
+    }
+    //循环判断条件数组
+    for (int k = 0; k < 6; k++) {
+     if (i < 3) {
+      if (intT == tt3[0][k] || intT == tt3[i + 3][k]) {
+       intT = 0;
+       break;
+      }
+     } else if (i < 6) {
+      if (intT == tt3[1][k] || intT == tt3[i][k]) {
+       intT = 0;
+       break;
+      }
+     } else if (i < 9) {
+      if (intT == tt3[2][k] || intT == tt3[i - 3][k]) {
+       intT = 0;
+       break;
+      }
+     }
+
+    }
+    //判断是否符合条件 
+    if (intT != 0) {
+     //符合条件就赋值到数组 并将其标示为 0
+     temp[i] = intT;
+     intTemp[j] = 0;
+     //做下一次循环 
+     i++;
+     //退出循环
+     break;
+    }
+
+   }
+
+  }
+  // System.out.println(sum + " E");
+  E = getint1(temp);
+  // printInt(E);
+
+ }
+
+  
+ // 生成数组 I
+ public void getI() {
+  intT = 0;
+  //同E
+  int intTemp[] = new int[9];
+  for (int i = 0; i < 9; i++) {
+   intTemp[i] = i + 1;
+  }
+
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt3[i][j] = G[i][j];
+    tt3[i][j + 3] = H[i][j];
+    tt3[i + 3][j] = C[j][i];
+    tt3[i + 3][j + 3] = F[j][i];
+   }
+  }
+
+  for (int i = 0; i < 9;)
+
+  {
+   for (int j = 0; j < 9; j++) {
+    intT = intTemp[j];
+    if (intT == 0) {
+     continue;
+    }
+    for (int k = 0; k < 6; k++) {
+     if (i < 3) {
+      if (intT == tt3[0][k] || intT == tt3[i + 3][k]) {
+       intT = 0;
+       break;
+      }
+     } else if (i < 6) {
+      if (intT == tt3[1][k] || intT == tt3[i][k]) {
+       intT = 0;
+       break;
+      }
+     } else if (i < 9) {
+      if (intT == tt3[2][k] || intT == tt3[i - 3][k]) {
+       intT = 0;
+       break;
+      }
+     }
+
+    }
+    if (intT != 0) {
+     temp[i] = intT;
+     intTemp[j] = 0;
+     i++;
+     break;
+    }
+
+   }
+
+  }
+  // System.out.println(sum + " I");
+  I = getint1(temp);
+  // printInt(I);
+ }
+
+ // 判断生成的数组 F H 是否符合要求 直到得到数组 F H
+ public boolean getFH() {
+
+  //判断标示值的数值是否大于特定值
+  if (FHsum > intSum) {
+   FHsum = 0;
+   //如果成立就重新生成程序
+   mainTest1();
+  }
+
+  //生成的数组用于存储标示值
+  intI1 = new int[3][3];
+  intI2 = new int[3][3];
+
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt3[i][j] = G[i][j];
+    tt3[i][j + 3] = H[i][j];
+    tt3[i + 3][j] = C[j][i];
+    tt3[i + 3][j + 3] = F[j][i];
+   }
+  }
+  for (int k = 0; k < 3;) {
+   for (int i = 0; i < 6; i++) {
+
+    for (int j = 0; j < 6; j++) {
+     if (tt3[k][i] == tt3[3][j]) {
+      intI1[k][0]++;
+     } else if (tt3[k][i] == tt3[4][j]) {
+      intI1[k][1]++;
+     } else if (tt3[k][i] == tt3[5][j]) {
+      intI1[k][2]++;
+     }
+    }
+
+   }
+   //判断标示值 均为4时 执行下次循环  
+   //判断值为4 是特定的条件
+   if (intI1[k][0] == 4 && intI1[k][1] == 4 && intI1[k][2] == 4) {
+    k++;
+   } else {
+    FHsum++;//标示值自加
+    return false;
+
+   }
+  }
+
+  
+  //同上
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt3[i][j] = D[i][j];
+    tt3[i][j + 3] = F[i][j];
+    tt3[i + 3][j] = B[j][i];
+    tt3[i + 3][j + 3] = H[j][i];
+   }
+  }
+  for (int k = 0; k < 3;) {
+   for (int i = 0; i < 6; i++) {
+
+    for (int j = 0; j < 6; j++) {
+     if (tt3[k][i] == tt3[3][j]) {
+      intI2[k][0]++;
+     } else if (tt3[k][i] == tt3[4][j]) {
+      intI2[k][1]++;
+     } else if (tt3[k][i] == tt3[5][j]) {
+      intI2[k][2]++;
+     }
+    }
+
+   }
+
+   if (intI2[k][0] == 4 && intI2[k][1] == 4 && intI2[k][2] == 4) {
+    k++;
+   } else {
+    FHsum++;
+    return false;
+
+   }
+  }
+
+  return true;
+ }
+
+ //程序的入口
+ public static void main(String[] args) {
+  // TODO 自动生成方法存根
+  new Sudoku();
+  printAll();
+ }
+ 
+ public static String getTab() {
+  new Sudoku();
+  return returnStr();
+ }
+
+ // 将一维数组转换为二维数组 横行
+ public int[][] getint1(int temp[]) { // 横行
+  int t[][] = new int[3][3];
+  int tnum = 0;
+
+  //依次将一维数组的值赋值给二维数组
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    t[i][j] = temp[tnum++];
+   }
+  }
+
+  return t;
+ }
+
+ // 将一维数组转换为二维数组 竖行
+ public int[][] getint2(int temp[]) { // 纵行
+  int t[][] = new int[3][3];
+  int tnum = 0;
+
+  //同getint1();
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    t[j][i] = temp[tnum++];
+   }
+  }
+
+  return t;
+ }
+
+  
+ // 打印特定的数组 用于测试时使用 或单独打印特定的区域的数组时 使用
+ public void printInt(int tt[][]) {
+  //循环打印
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    System.out.print(tt[i][j]);
+   }
+   System.out.println();
+  }
+ }
+
+ public static void printAll() { 
+ 	 System.out.print(returnStr());
+ }
+
+ // 打印全部的数组的值 按照一定的格式
+ public static String returnStr() {
+  String res = "";
+  
+  res += sysLine;
+  for (int i = 0; i < A.length; i++) {
+   for (int j = 0; j < A[i].length; j++) {
+    if(j==0) res += " ";
+    res += A[i][j] + " "; 
+   }
+   for (int j = 0; j < B[i].length; j++) {
+    if(j==0) res += " ";
+    res += B[i][j] + " "; 
+   }
+   for (int j = 0; j < C[i].length; j++) {
+    if(j==0) res += " ";
+    res += C[i][j] + " "; 
+   }
+   res += sysLine;
+  }
+  
+  res += sysLine;
+  for (int i = 0; i < D.length; i++) {
+   for (int j = 0; j < D[i].length; j++) {
+    if(j==0) res += " ";
+    res += D[i][j] + " "; 
+   }
+   for (int j = 0; j < E[i].length; j++) {
+    if(j==0) res += " ";
+    res += E[i][j] + " "; 
+   }
+   for (int j = 0; j < F[i].length; j++) {
+    if(j==0) res += " ";
+    res += F[i][j] + " "; 
+   }
+   res += sysLine;
+  }
+  
+  res += sysLine;
+  for (int i = 0; i < G.length; i++) {
+   for (int j = 0; j < G[i].length; j++) {
+    if(j==0) res += " ";
+    res += G[i][j] + " "; 
+   }
+   for (int j = 0; j < H[i].length; j++) {
+    if(j==0) res += " ";
+    res += H[i][j] + " "; 
+   }
+   for (int j = 0; j < I[i].length; j++) {
+    if(j==0) res += " ";
+    res += I[i][j] + " "; 
+   }
+   res += sysLine;
+  }
+  
+  return res;
+ }
+
+}
+
+/*
+
+生成条件的数组的思路:
+
+
+一 纵向生成的数组: 使用方法getint1();
+  1>D 判断A的纵向的行的所有数字 
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt1[i][j] = A[j][i];
+   }
+  }
+  即 tt1 数组中记录的数值  3行3列
+  2>G 判断A D 的纵向的行的所有数字
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt2[i][j] = A[j][i];
+    tt2[i + 3][j] = D[j][i];
+   }
+  }
+  即 tt2 数组中记录的数值  6行3列
+  
+  
+二 横向生成的数组: 使用方法getint2();
+  1>B 判断A的横向的行的所有数字 
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt1[i][j] = A[i][j];
+   }
+  }
+  即 tt1 数组中记录的数值  3行3列
+  2>C 判断A B 的横向的行的所有数字   F H 均和C相同
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt2[i][j] = A[i][j];
+    tt2[i + 3][j] = B[i][j];
+   }
+  }
+  即 tt2 数组中记录的数值  6行3列
+  3>E 判断D F 的横向的行的所有数字 并判断B H 的纵向的行的所有数字   I与其相同
+  for (int i = 0; i < 3; i++) {
+   for (int j = 0; j < 3; j++) {
+    tt3[i][j] = D[i][j];
+    tt3[i][j + 3] = F[i][j];
+    tt3[i + 3][j] = B[j][i];
+    tt3[i + 3][j + 3] = H[j][i];
+   }
+  }
+  即 tt3 数组中记录的数值  6行6列
+  
+
+程序中的关键点:
+ 1>生成的区域的顺序 
+ 2>生成不同的区域时的方法不同 注意区分 
+  1.A
+  2.B D
+  3.C G
+  4.F H
+  5.E I
+ 3>F H 数组的生成  即方法getFH()
+ 4>条件均为4时 保证E I区域中的每个位置都只有唯一的值出现
+  每组6个数字 共12个 相同的值为4个 不同的值为4个 即8个
+  每个区域共9个数字 已经确定的数字8个 那么唯一的数字的位置就确定了
+
+
+//本文来自CSDN博客，转载请标明出处：
+//http://blog.csdn.net/xiaoyu13620781041/archive/2007/11/30/1910066.aspx
+
+
+*/
+
+
+
+
+
+
+/*******************************************************************************
+ File : \src\module\puzzler\SuPuz.java 
+*******************************************************************************/
+package module.puzzler;
+import begin.*;
+
+import static java.util.Arrays.*;
+
+public class SuPuz{
+  
+  public static final int SIZE =9;
+  private boolean[][] fixed =new boolean[SIZE][SIZE];
+  private int[][] number =new int[SIZE][SIZE];
+  
+  public SuPuz(){
+  }
+  
+  public SuPuz(int[][] p){
+    setSuPuz(p);
+  }
+  
+  /**
+  * 用一个二维数组去设置该数独
+  * 注意:这个二维数组应该只包含0~9中的数字,为0时表示该处留空
+  * 该方法假设p的数据是合法的,不对其进行任何检查
+  */
+  public void setSuPuz(int[][] p){
+    for(int i=0;i<SIZE;i++) {
+      for(int j=0;j<SIZE;j++){
+        if(p[i][j] ==0){
+        fixed[i][j] =false;
+        number[i][j] =0;
+        } else{
+        number[i][j] =p[i][j];
+        fixed[i][j] =true;
+        }
+      } // for 
+    } // for  
+  }
+  
+  /**
+  * 清除
+  */
+  public void clear(){
+    for(int n=0;n<SIZE;n++){
+      fill(fixed[n],false);
+      fill(number[n],0);
+    }
+    return;
+  }
+  
+  /**
+  * 位置i,j是否固定,如果固定表示该处的数字不能更改
+  */
+  public boolean isFixed(int i,int j){
+    return fixed[i][j];
+  }
+  /**
+  * 得到位置i,j处的数字
+  */
+  public int getNumber(int i,int j){
+    return number[i][j];
+  }
+  /**
+  * 设置i,j处的数字.如果该处数字是固定的,将抛出异常
+  */
+  public void setNumber(int i,int j,int num){
+    if(num<0||num>9) throw new IllegalArgumentException("number is out of 0~9 :"+num);
+    if(isFixed(i,j)) throw new IllegalStateException("puzzler("+i+","+j+") is fixed");
+    number[i][j] =num;
+  }
+}
+
+
+
+
+/*******************************************************************************
+ File : \src\module\tools\Coder.java 
+*******************************************************************************/
+package module.tools;
+
+import begin.*;
+import module.*;
+import module.tools.*;
+import module.puzzler.*;
+import sframe.*;
+
+//import java.lang.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
+//import java.sql.*;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+import java.net.*;
+
+public class Coder extends JFrame {  
+  
+  static JTextArea sysArea = PeaceBox.sysEditor;
+  static Properties sysLTab = PeaceBox.sysLTab; //sysLTab.getProperty("xxName","defValue")
+  static String sysLine = System.getProperty("line.separator");
+  static String sysBasePath = Info.getBasePath();
+  static Properties sysConfig = PeaceBox.sysConfig;
+  
+  private long fileSize = 0;
+  private String fileCSet = "GBK";
+  private String basePath = "";
+  private static String fPathGap = System.getProperty("file.separator");
+  
+  private String fileExts = "";
+  private String fillDirs = "";
+    
+  private String fileHead1 = sysLine+"/*******************************************************************************";
+  private String fileHead2 = sysLine+" File : (fName) ";
+  private String fileHead3 = sysLine+"*******************************************************************************/";
+  private String fileHead = sysLine+sysLine+fileHead1+fileHead2+fileHead3+sysLine;
+  
+  private static boolean closeForm=false;
+
+  private Coder() {
+    ;
+  }
+  private Coder(String filePath) {
+    getCSet(new File(filePath));
+  }
+  private Coder(File file) {
+    getCSet(file);
+  } 
+
+  public static void CUnite(String myForm) {
+  	
+    final JTextField pBase = new JTextField(sysConfig.getProperty("fileOpen",sysBasePath));
+    final JTextField fExts = new JTextField(sysConfig.getProperty("CDExts","asp|jsp|java|php|"));  
+    final JTextField fFill = new JTextField(sysConfig.getProperty("CDFill","editor|pcode|"));
+    final JDialog dp = new JDialog();
+    
+    dp.setTitle(myForm);
+    dp.setBounds(150,150,300,150);
+    dp.setVisible(true);
+    dp.setLayout(null);
+    dp.setResizable(false);
+    dp.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+    
+    JLabel jlb1,jlb2,jlb3;
+    jlb1 = new JLabel("跟目录:"); dp.add(jlb1); jlb1.setBounds(10,10,100,20);
+    jlb2 = new JLabel("扩展名:"); dp.add(jlb2); jlb2.setBounds(10,35,100,20); 
+    jlb3 = new JLabel("过滤项:"); dp.add(jlb3); jlb3.setBounds(10,60,100,20); 
+    
+    dp.add(pBase); pBase.setBounds(60,10,220,20);
+    dp.add(fExts); fExts.setBounds(60,35,220,20);
+    dp.add(fFill); fFill.setBounds(60,60,220,20);
+
+    JButton bScn = new JButton("导出代码");
+    dp.add(bScn); bScn.setBounds(180,85,100,20);
+    
+    bScn.addActionListener(new ActionListener(){
+		  public void actionPerformed(ActionEvent e) { 
+		  	
+		  	String p = pBase.getText(); 
+		  	int j = 0;
+		  	
+  	    Coder c1 = new Coder();
+  	    c1.basePath = p;
+        c1.fileExts = fExts.getText();
+        c1.fillDirs = fFill.getText();
+        
+		  	c1.saveDir(p+"","(Root)",0);
+		  	sysArea.append("(Root) OK"+sysLine);
+        File d = new File(pBase.getText()); 
+        File list[] = d.listFiles();  
+        for(int i=0;i<list.length;i++){   
+          String fName = list[i].getName();
+          if(list[i].isFile()) {   
+            ;
+          } else {
+          	j++;
+          	c1.saveDir(p+fPathGap+fName,fName,j);
+          	sysArea.append(fName+" OK"+sysLine);
+          }  
+        } 
+		  	sysConfig.setProperty("fileOpen",pBase.getText());
+		  	sysConfig.setProperty("CDExts",fExts.getText());
+		  	sysConfig.setProperty("CDFill",fFill.getText());
+		  	MSett.saveProp();
+		  	dp.dispose();
+		  }
+		} );
+  }
+
+
+  public static void main(String[] args)
+  {
+  	
+  	closeForm=true;
+  	CUnite("Code Unite");
+
+  }
+
+  public StringBuffer getBDir(String fPath) {
+	  StringBuffer sb = new StringBuffer();
+    File d = new File(fPath); 
+    File list[] = d.listFiles();  
+    for(int i=0;i<list.length;i++) {   
+      String fName = list[i].getName();
+      String fullPath = fPath + fPathGap + fName; 
+      if(list[i].isFile()){   
+        String fExt = ""; //fileExts = "asp|jsp|java|php|apsx|cs|js|"
+        int p = fName.lastIndexOf(".");
+        if(p>0) {
+        	fExt = fName.substring(p+1,fName.length());
+        	fExt = fExt.toLowerCase();
+        }
+        if(fileExts.toLowerCase().indexOf(fExt+"|")>=0) {
+          String hd = fileHead;
+          hd = hd.replace("(fName)",fullPath);
+          hd = hd.replace(basePath,"");
+		      sb.append(hd+readFile(fullPath));
+		    }
+      } else {
+		    if(fillDirs.indexOf(fName+"|")<0)
+		    { sb.append(getBDir(fullPath)); } //fillDirs = "editor|pcode|"
+	    } 
+    } 
+    return sb;
+  }
+  
+  public StringBuffer getBRoot(String fPath) {
+	  StringBuffer sb = new StringBuffer();
+    File d = new File(fPath); 
+    File list[] = d.listFiles();  
+    for(int i=0;i<list.length;i++){   
+      String fName = list[i].getName();
+      String fullPath = fPath +fPathGap+ list[i].getName();
+      if(list[i].isFile()){   
+        String fExt = "";
+        int p = fName.lastIndexOf(".");
+        if(p>0) {
+        	fExt = fName.substring(p+1,fName.length());
+        	fExt = fExt.toLowerCase();
+        }
+        if(fileExts.toLowerCase().indexOf(fExt+"|")>=0) {
+          String hd = fileHead;
+          hd = hd.replace("(fName)",fullPath);
+          hd = hd.replace(basePath,"");
+		      sb.append(hd+readFile(fullPath));
+		    }
+	    } 
+    } 
+    return sb;
+  }
+  
+  public void saveDir(String fPath, String fName, int n) {
+  	StringBuffer sb = new StringBuffer();
+  	String m = "0"; if(n>9) m = "";
+  	String fp = sysBasePath+fPathGap+"temp"+fPathGap+"code-"+m+n+fName+".txt";
+  	if(n==0) {
+  	  sb = getBRoot(fPath);
+  	  fp = sysBasePath+fPathGap+"temp"+fPathGap+"code-(root).txt";	
+  	} else {
+  		sb = getBDir(fPath);
+  	}
+  	if(sb.length()==0) return;
+    File myfile = new File(fp); 
+    PrintWriter output = null; 
+    try { 
+      output = new PrintWriter(myfile); 
+      output.write(sb.toString()); 
+    } catch (IOException ex) { 
+      Func.doException(ex, "Coder:(fileSave)");
+    } finally { 
+      output.close(); 
+      output = null; 
+    } 
+  }
+
+  public static String readFile(String filePath) {
+  	Coder c1 = new Coder(filePath);
+  	int len = (int)c1.fileSize; 
+  	String cset = c1.fileCSet;
+  	String tmp = ""; 
+  	byte[] buf = new byte[len];
+  	try { 
+      FileInputStream fis = new FileInputStream(filePath);
+      fis.read(buf);
+      if(!cset.equals("GBK")) { 
+      	tmp = new String(buf,0,len,cset); 
+      } else {
+      	tmp = new String(buf,0,len);
+      }
+      fis.close();
+    } catch (Exception ex) {
+        Func.doException(ex, "Coder"+":(readFile)");
+    }
+    return tmp;
+  }  
+
+  private void getCSet( File file ) {
+    String cset = "GBK";
+    this.fileSize = file.length();
+    byte[] first3Bytes = new byte[3];
+    try {
+      boolean f = false;
+      BufferedInputStream bis = new BufferedInputStream( new FileInputStream( file ) );
+      bis.mark( 0 );
+      int read = bis.read( first3Bytes, 0, 3 );
+      if ( read == -1 ) fileCSet = cset; //return cset;
+      if ( first3Bytes[0] == (byte) 0xFF && first3Bytes[1] == (byte) 0xFE ) {
+        cset = "UTF-16LE";
+        f = true;
+      }
+      else if ( first3Bytes[0] == (byte) 0xFE && first3Bytes[1] == (byte) 0xFF ) {
+        cset = "UTF-16BE";
+        f = true;
+      }
+      else if ( first3Bytes[0] == (byte) 0xEF && first3Bytes[1] == (byte) 0xBB && first3Bytes[2] == (byte) 0xBF ) {
+        cset = "UTF-8";
+        f = true;
+      }
+      bis.reset();
+      if (!f) {
+        int loc = 0; //int len = 0;
+        while ( (read = bis.read()) != -1 ) {
+          loc++;
+          if ( read >= 0xF0 ) break;
+          if ( 0x80 <= read && read <= 0xBF ) // 单独出现BF以下的，也算是GBK
+          break;
+          if ( 0xC0 <= read && read <= 0xDF ) {
+            read = bis.read();
+            if ( 0x80 <= read && read <= 0xBF ) // 双字节 (0xC0 - 0xDF) (0x80 // - 0xBF),也可能在GB编码内                                           
+            continue;
+            else break;
+          }
+          else if ( 0xE0 <= read && read <= 0xEF ) { // 也有可能出错，但是几率较小
+            read = bis.read();
+            if ( 0x80 <= read && read <= 0xBF ) {
+              read = bis.read();
+              if ( 0x80 <= read && read <= 0xBF ) {
+                cset = "UTF-8";
+                break;
+              }
+              else break;
+            }
+            else break;
+          }
+        } //System.out.println( loc + " " + Integer.toHexString( read ) );
+      }
+      bis.close(); 
+    } catch ( Exception ex ) {
+        Func.doException(ex, "Coder"+":(getCSet)");
+    } 
+    fileCSet = cset; //return cset;
+  } 
+  
+}
+
+
+
+/*******************************************************************************
+ File : \src\module\tools\Down.java 
+*******************************************************************************/
+package module.tools;
+import begin.*;
+
+import java.io.*;
+import java.net.*;
+import java.util.ArrayList;
+import java.util.regex.*;
+import java.awt.*; 
+import javax.swing.*; 
+
+public class Down {  
+  
+  public static String DownLine = "[ === Download Result ================================================ ]";
+  private static  String line = System.getProperty("line.separator");
+  private static String DownFlag = ""; 
+  private static int DownThread = 8;
+  static JTextArea sysArea = PeaceBox.sysEditor;
+  
+  public static void start(String urlFiles) 
+  { 
+    String[] a = urlFiles.split("\\|");
+    for(int i=0;i<a.length;i++)
+    {
+      final String url = a[i];
+      if(url.equals(DownLine)) 
+      { 
+      	i = a.length + 2; 
+      	break;
+      }
+      if((url.length()>10)&&(url.indexOf("//")>0))
+      {
+        new Thread() {   
+          public void run() {   
+            String s = down(url); 
+          } // run   
+        }.start(); // new Thread   
+      }
+    }
+    /* Demo as Main() */
+  }
+  
+  public static void start() 
+  { 
+		String sUrl = new String(sysArea.getText());
+		sUrl = getListPart(sUrl);
+    if((sUrl.length()>10)&&(sUrl.indexOf("//")>0))
+    {
+			DownFlag = "";//.setText("");
+			String line = System.getProperty("line.separator");
+			sysArea.setText(sUrl); 
+			sysArea.append(line+line+Down.DownLine+line);
+		  sUrl = sUrl.replace("\n\r","|");
+		  sUrl = sUrl.replace("\n","|");
+		  sUrl = sUrl.replace("\r","|");
+		  sUrl = sUrl.replace("||","|");
+      String[] a = sUrl.split("\\|");
+      for(int i=0;i<a.length;i++)
+      {
+        final String url = a[i];
+        if(url.equals(DownLine)) 
+        { 
+        	i = a.length + 2; 
+        	break;
+        }
+        if((url.length()>10)&&(url.indexOf("//")>0))
+        {
+    	    if(flagSleep()) { //////////// start 调度程序
+            i--; //这个不算,再循环
+            while(flagSleep()) {
+            	try {
+            		Thread.sleep(500);
+            	} catch (Exception Exp) { 
+            		;//
+            	}
+            }
+          } else { ///////////////////// else 调度程序 
+            flagNew();
+            new Thread() {   
+              public void run() {   
+                String s = down(url); 
+              } // run   
+            }.start(); // new Thread 
+          } //////////////////////////// end 调度程序 
+        }  
+      }
+		} else {
+      String eMsg = "Error:下载设置错误! 错误代码:(mu4DLnk)\n\r"+"请设置URL地址";
+      JOptionPane.showMessageDialog(null, eMsg);
+		}
+  }
+
+  private static String down(String str)
+  {
+     String file = getFileName(str);
+     try {
+       URL url = new URL(str);
+       URLConnection uConn = url.openConnection(); //该URL方法返回一个URLConnection的对象！
+       InputStream is = uConn.getInputStream();  //Returns an input stream that reads from this open connection.
+       // ??? 缓冲
+       FileOutputStream fos = new FileOutputStream(Info.getBasePath()+"temp\\"+file);  //保存到本地硬盘
+       int data;
+       while((data=is.read())!=-1)   //读取数据文件（如图片）时，用字节流；
+       {
+         fos.write(data);   //写入字节，一个字节一个字节地读、写！
+       }
+       is.close();
+       fos.close();
+       sysArea.append(uConn.getContentType()+" ("+uConn.getContentLength()+"B) "+str+line);
+       flagEnd("V");
+     } catch (Exception ex) {
+       sysArea.append("Error:("+str+")"+ex.toString()+line);
+       flagEnd("X");
+     }
+     //System.out.println(DownFlag);
+     return ""; 
+  } 
+  
+  public static void getLinks() 
+  { 
+		String sUrl = new String(sysArea.getText());
+		String line = System.getProperty("line.separator");
+		sysArea.setText("");
+    if((sUrl.length()>10)&&(sUrl.indexOf("//")>0))
+    {
+			String[][] aUrl = Down.getLinks(sUrl);
+      for(int j=0;j<aUrl.length;j++)
+      {
+      	sysArea.append(aUrl[j][0]+System.getProperty("line.separator")); 
+      }
+		} else {
+      String eMsg = "Error:链接提取错误! 错误代码:(mu3Link)\n\r"+"请加载内容";
+      JOptionPane.showMessageDialog(null, eMsg);
+		}
+	}
+  
+  public static String[][] getLinks(String str)
+  {
+    String reg = "<a\\s*href\\s*=\\s*[\"|']([^\\s]*)[\"|']\\s*[^>]*\\s*>([^ <]*)<\\s*/a\\s*>";
+                //<a.+?href=(\"|'|)\\b(.+?)\\b\\1(?:\\s.*)?>(.+?)</a>
+
+    Pattern p = Pattern.compile(reg);
+    Matcher m = p.matcher(str);  
+    
+    ArrayList<String> a1 = new ArrayList<String>(); 
+    ArrayList<String> a2 = new ArrayList<String>(); 
+    int i = 0;
+    while(m.find()){
+      a1.add(m.group(1));
+      a2.add(m.group(2));
+      i++;
+    }
+
+    String[] b1 = (String[]) a1.toArray(new String[0]);
+    String[] b2 = (String[]) a2.toArray(new String[0]);
+    String a[][] = new String[i][];
+    for(int j=0;j<i;j++)
+    {
+    	String t = b1[j];
+    	if(t.substring(0,1).equals("/"))
+    	  t = "http://domain"+t;
+    	a[j] = new String[2];
+    	a[j][0] = t; //b1[j]; 
+      a[j][1] = b2[j];
+      //System.out.println(a[j][0]+" = "+a[j][1]);
+    }
+    return a;
+  }  
+  
+  private static String getFileName(String url)
+  {
+  	int p = url.lastIndexOf("/");
+  	String s = url;
+  	s = s.replace("|","`").replace(":","`"); /* [?:\|/*<>"] */
+  	if((p+1)==url.length()||(p<10)) // http://www.txjia.com/ 
+  	{
+  		p = url.indexOf("://")+3;
+  		s = url.substring(p,url.length())+".htm";
+  		//System.out.println(s);
+  	} else {
+  		p++;
+  		s = url.substring(p,url.length());
+  		//System.out.println(s);
+  	}
+  	if(s.indexOf(".")<0) { s = s+".htm"; }
+  	if(s.indexOf("?")>0) { s = s+".htm"; }
+  	s = s.replace("/.",".").replace("/","#").replace("?","~");
+  	return s;
+  }
+  
+  private static String getListPart(String str)
+  {
+  	int p = str.indexOf(line+line+Down.DownLine+line);
+  	String s = str;
+  	if(p>0) {
+  		s = str.substring(0,p);
+  		//System.out.println(":aa:"+p+s+":bb:");
+  	}
+  	return s;
+  }
+  
+  public static void main(String[] args)
+  {
+    String urls = "http://www.txjia.com/";
+    urls += "|http://www.txjia.com/index.asp";
+    urls += "|http://www.txjia.com/web/ind.asp?ARNM=东莞";
+    urls += "|http://www.txjia.com/?ARNM=东莞";
+    urls += "|http://www.txjia.com/?ARNM=东莞:#TestFalg";
+    urls += "|http://www.txjia.com/blog/";
+    urls += "|http://www.txjia.com/blog";
+    urls += "|http://www.txjia.com/web/bb/nview.asp?KeyID=0BA7DD4E009EYT8FX5MBDGP5";
+    start(urls);
+  }
+  
+  private static boolean flagSleep() 
+  {
+  	if(DownFlag.length()-DownFlag.replace("-","").length()>=DownThread) return true;
+  	else return false;
+  }
+  
+  private static void flagNew() 
+  {
+  	DownFlag += "-"; 
+  }
+  
+  private static void flagEnd(String r) 
+  {
+  	String c,s="",t = DownFlag;
+  	if(t.indexOf("-")>=0) {
+  		boolean f = true;
+  		for(int i=0;i<t.length();i++) {
+  		  c = t.substring(i,i+1); 
+  		  if(f&&c.equals("-")) {
+  		  	s += r;
+  		  	f = false;
+  		  } else {
+  		    s += c;
+  		  }
+  		}
+    }
+    DownFlag = s;
+  }
+       	
+}
+
+
+
+
+/*******************************************************************************
+ File : \src\module\tools\IPScan.java 
+*******************************************************************************/
+package module.tools;
+import begin.*;
+import sframe.*;
+
+//import java.lang.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
+import java.util.regex.*;
+//import java.sql.*;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.event.*;
+import javax.swing.text.*;
+import javax.swing.text.html.*;
+
+//import java.io.PrintWriter;
+import java.net.*;
+
+public class IPScan {  
+  
+  static JTextArea sysArea = PeaceBox.sysEditor;
+  static Properties sysConfig = PeaceBox.sysConfig;
+  
+  public static void scanDialog() 
+  {
+  	
+    final JTextField ipBase = new JTextField(IPScan.getLocal(""));
+    final JTextField ipMin = new JTextField(sysConfig.getProperty("IPMin","2"));  
+    final JTextField ipMax = new JTextField(sysConfig.getProperty("IPMax","254"));
+    final JCheckBox ipFlag = new JCheckBox("显示未使用的"); 
+    final JDialog ip = new JDialog();
+    if(sysConfig.getProperty("IPFlag").equals("NA")) ipFlag.setSelected(true);
+    
+    ip.setTitle("IP扫描设置");
+    ip.setBounds(150,150,300,150);
+    ip.setVisible(true);
+    ip.setLayout(null);
+    ip.setResizable(false);
+    ip.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+    
+    JLabel jlb1,jlb2,jlb3;
+    jlb1 = new JLabel("IP头:"); ip.add(jlb1); jlb1.setBounds(20,10,100,20);
+    jlb2 = new JLabel("范围:"); ip.add(jlb2); jlb2.setBounds(20,40,100,20); 
+    jlb3 = new JLabel("选项:"); ip.add(jlb3); jlb3.setBounds(20,70,100,20); 
+    
+    ip.add(ipBase); ipBase.setBounds(50,10,220,20);
+    ip.add(ipMin);  ipMin.setBounds(50,40,80,20);
+    ip.add(ipMax);  ipMax.setBounds(190,40,80,20);
+    
+    ip.add(ipFlag); ipFlag.setBounds(50,70,110,20);
+    JButton bScn = new JButton("扫描(S)"); bScn.setMnemonic('S');
+    ip.add(bScn); bScn.setBounds(190,70,80,20);
+    
+    bScn.addActionListener(new ActionListener(){
+		  public void actionPerformed(ActionEvent e) { 
+		  	sysArea.setText("");
+		  	String flag = "OK";
+		  	if(ipFlag.isSelected()==true) { flag = "NA"; }
+		  	String base = ipBase.getText();
+		  	int min = Integer.valueOf(ipMin.getText());
+		  	int max = Integer.valueOf(ipMax.getText());
+		  	final String f = flag;
+        for(int id=min;id<=max;id++) {   
+          final String ip = base+"."+id; 
+          new Thread() {   
+            public void run() {   
+              IPScan.getHost(ip, f, sysArea);
+            } // run   
+          }.start(); // new Thread 
+        } // for End
+		  	sysConfig.setProperty("IPMin",ipMin.getText());
+		  	sysConfig.setProperty("IPMax",ipMax.getText());
+		  	sysConfig.setProperty("IPFlag",flag);
+		  	MSett.saveProp();
+		  	ip.dispose();
+		  }
+		} );
+		return;
+  }
+  
+  public static void scan(String base, int min, int max, String flag) 
+  {
+    final String f = flag; // OK,NA
+    for(int id=min;id<=max;id++) {   
+      final String ip = base+"."+id; 
+      new Thread() {   
+        public void run() {   
+          String s = getHost(ip, f);
+          if(!s.equals("")) { 
+        	  System.out.println(s);
+          } 
+        } // run   
+      }.start(); // new Thread 
+    } // for 	s
+    /*
+    IPScan.scan("192.168.37", 2, 254, "OK");
+    */
+  }
+
+  public static String getHost(String ip, String flag) {   
+    String s0 = "", f = flag;
+    InetAddress ha = null;
+    try {   
+      ha = InetAddress.getByName(ip); 
+      if(!ha.getHostName().equalsIgnoreCase(ha.getHostAddress())) {
+        if(f.equals("OK")) { 
+        	s0 = getMac(ip)+" "+ip+" "+ha.getHostName(); 
+        } 
+      } else {
+      	if(f.equals("NA")) { 
+      		s0 = ip+": [Null] "; 
+      	} 
+      }  
+	  } catch(Exception e) { 
+	  	System.out.println("Error getConfig:"+e.toString()); 
+	  }         
+    return s0;
+  }
+  
+  public static void getHost(String ip, String flag, JTextArea sysArea) {   
+    String s0 = "", f = flag;
+    InetAddress ha = null;
+    try {   
+      ha = InetAddress.getByName(ip); 
+      if(!ha.getHostName().equalsIgnoreCase(ha.getHostAddress())) {
+        if(f.equals("OK")) { 
+        	s0 = getMac(ip)+" "+ip+" "+ha.getHostName(); 
+        } 
+      } else {
+      	if(f.equals("NA")) { 
+      		s0 = ip+": [Null] "; 
+      	} 
+      }  
+	  } catch(Exception e) { 
+	  	System.out.println("Error getConfig:"+e.toString()); 
+	  }         
+    if(!s0.equals("")) { 
+      sysArea.append(s0+System.getProperty("line.separator"));
+    }
+  }
+ 
+  public static String getMac(String IP)
+  {
+    String str = "", mac = "";
+    try {
+      Process pp = Runtime.getRuntime().exec("nbtstat -A " + IP);
+      InputStreamReader ir = new InputStreamReader(pp.getInputStream());
+      LineNumberReader input = new LineNumberReader(ir);
+      for (int i = 1; i < 100; i++) {
+        str = input.readLine();
+        if (str != null) {
+          if (str.indexOf("MAC Address") > 1) {
+            mac = str.substring(str.indexOf("MAC Address") + 14, str.length());
+            break;
+          }
+        }
+      }
+	  } catch(Exception e) { 
+	  	System.out.println("Error getConfig:"+e.toString()); 
+	  } 
+    return mac;
+    /* C:\Windows>nbtstat -A 192.168.1.168
+      |        NetBIOS Remote Machine Name Table      |
+      |                                               |
+      |    Name               Type         Status     |
+      | --------------------------------------------- |
+      | TIEXIN         <00>  UNIQUE      Registered   |
+      | TIEXIN         <20>  UNIQUE      Registered   |
+      | WORKGROUP      <00>  GROUP       Registered   |
+      | WORKGROUP      <1E>  GROUP       Registered   |
+      | WORKGROUP      <1D>  UNIQUE      Registered   |
+      | ..__MSBROWSE__.<01>  GROUP       Registered   |
+      |                                               |
+      | MAC Address = 00-1A-4D-61-7D-C0               |
+    */
+  }
+
+  public static String getLocal()
+  {
+    try {   
+      InetAddress inet = InetAddress.getLocalHost(); 
+      return inet.getHostAddress();        
+	  } catch(Exception e) { 
+	  	System.out.println("Error getConfig:"+e.toString());
+	  	return ""; 
+	  }
+	  /*
+	  System.out.println("Local IP:" + getLocal()); 	  
+	  */ 
+  }  
+  
+  public static String getLocal(String flag)
+  {
+    String ip = getLocal();
+    int p = ip.lastIndexOf(".");
+    return ip.substring(0,p);
+	  /*
+	  System.out.println("Local IP:" + getLocal("")); 	  
+	  */ 
+  } 
+     	
+}
+
+
+
+
+/*******************************************************************************
+ File : \src\panels\SideBar.java 
+*******************************************************************************/
+package panels;
+
+import begin.*;
+import module.*;
+import module.tools.*;
+import module.puzzler.*;
+import sframe.*;
+
+//import java.lang.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
+//import java.sql.*;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+//import java.net.*;
+
+public class SideBar extends JFrame {  
+  
+  JTextArea sysEditor = PeaceBox.sysEditor;
+  Properties sysLTab = PeaceBox.sysLTab; //sysLTab.getProperty("xxName","defValue")
+  String sysLine = System.getProperty("line.separator");
+  String sysBasePath = Info.getBasePath();
+  
+  public static JPanel pSide = PeaceBox.pSide; 
+  public static JPanel pBox1 = new JPanel(null); 
+  public static JPanel pBox2 = new JPanel(null); 
+  
+  private JButton btSide = PeaceBox.tooBar.btSide; 
+  private Color csGack = new Color(255,255,255); //* 210,210,210 240,240,240 248,248,248 255,255,255
+  private Color ctGack = new Color(210,210,210);
+  
+  private JPanel pTitle = new JPanel(new BorderLayout(0,0)); 
+  private JPanel pUrl   = new JPanel(new BorderLayout(0,0)); 
+  private JPanel pTop   = new JPanel(new BorderLayout(0,0)); 
+  public JTextField tUrl = new JTextField(sysBasePath,12); // 12参数
+  //public JLabel pLab = new JLabel("[Parent Directory]");
+  private String fPathOpen = PeaceBox.sysBasePath; //PeaceBox.sysConfig.fileOpen
+  private String fPathGap = System.getProperty("file.separator");
+
+  public void setSide() // 初始化Side
+  { 
+    pSide.setVisible(false); 
+    pSide.setLayout(new BorderLayout(0,0));
+     
+    setTitle();
+    setBox();
+  	fillBox();
+  } 
+   
+  private void reBox() // 重新填写Box1,Box2
+  {
+  	pBox1.removeAll();
+  	pBox2.removeAll();
+  	pBox1.repaint(); 
+  	pBox2.repaint();
+  	fillBox(); 
+  } 
+
+  // fillItem()
+  private void fillBox() // 填写Box1,Box2主控制台
+  { 
+  	String sTab = getFiles(fPathOpen);
+  	String[] aTmp = sTab.split("\\?"); 
+  	String[] aDir = aTmp[0].split("\\|"); int n1 = aDir.length+1;
+  	String[] aFil = aTmp[1].split("\\|"); int n2 = aFil.length;
+  	if(n1<10) n1 = 10; 
+  	if(n2<17) n2 = 17; 
+  	pBox1.setLayout(new GridLayout(n1,1,0,0)); 
+  	pBox2.setLayout(new GridLayout(n2,1,0,0));
+  	fillPDir();
+  	fillList(pBox1, aDir, 1);
+  	fillList(pBox2, aFil, 2);
+  }
+  
+  private void fillList(JPanel p, String[] a, final int f) //填写单个Box1,Box2
+  { 
+  	for(int i=0;i<a.length;i++) { 
+  		
+  	  final JLabel iLab = new JLabel("");
+  	  iLab.setBackground(new Color(255,255,255)); 
+  	  iLab.setOpaque(true);
+  	  iLab.setToolTipText(a[i]);
+  	  if(a[i].length()>25) iLab.setText(a[i].substring(0,22)+"...");
+  	  else iLab.setText(a[i]);
+  		p.add(iLab);
+  		if(iLab.getText().indexOf(":No")<0)
+  		{
+  		  iLab.addMouseListener(new MouseAdapter() { 
+          public void mouseEntered(MouseEvent e) {
+            iLab.setBackground(new Color(240,240,240));
+          } 
+          public void mouseExited(MouseEvent e) {
+          	iLab.setBackground(new Color(255,255,255));
+          }
+          public void mouseClicked(MouseEvent e) { 
+            if(e.getClickCount() == 2){ 
+              if(f==1) {
+                fPathOpen += iLab.getToolTipText()+fPathGap; 
+                tUrl.setText(fPathOpen); 
+                reBox(); 
+                sysEditor.setText(tUrl.getText());
+              } else {
+                // Open Files
+                sysEditor.setText(Coder.readFile(tUrl.getText()+iLab.getToolTipText()));
+                //sysEditor.setText(iLab.getToolTipText());
+              }
+            } 
+          } // end mouseClicked
+        });   
+      } else {
+      	iLab.setBackground(new Color(180,180,180)); 
+      }
+  	}	
+  }
+  
+  private void fillPDir() // (返回)上级目录
+  {
+  	final JLabel pLab = new JLabel("[Parent Directory]"); 
+  	pLab.setHorizontalAlignment(SwingConstants.CENTER);
+  	pLab.setBackground(new Color(255,255,255)); 
+  	pLab.setOpaque(true); 
+  	pBox1.add(pLab);  
+  	pLab.addMouseListener(new MouseAdapter() { 
+      public void mouseEntered(MouseEvent e) { 
+        pLab.setBackground(new Color(240,240,240)); 
+      } 
+      public void mouseExited(MouseEvent e) {
+      	pLab.setBackground(new Color(255,255,255));
+      }
+      public void mouseClicked(MouseEvent e) { 
+        if(e.getClickCount() == 2) { 
+          String p = tUrl.getText();
+          p = p.substring(0,p.length()-1); 
+          int n = p.lastIndexOf(fPathGap); 
+          if(n>0) { 
+          	p = p.substring(0,n+1); 
+          	fPathOpen = p; 
+          	tUrl.setText(p); 
+          	reBox(); 
+          	sysEditor.setText(p); 
+          }
+        }
+      } 
+  	}); // End Parent Dir .... 
+  }
+
+  private void setTitle()  // 初始化Title
+  { 
+    Insets bGap = new Insets(0,0,0,0);
+    JPanel pTop2 = new JPanel(new GridLayout(2,1,1,1));
+    pTop2.add(pTitle,"North");  
+    pTop2.add(pUrl,"South"); 
+    pTop.add(pTop2,"North");
+    
+    pTitle.setBackground(ctGack);
+    JButton sHide = new JButton(sysLTab.getProperty("tbHide","Hide")); 
+    sHide.setMargin(bGap); 
+    pTitle.add(new JLabel(" Side Title"),"Center"); 
+    pTitle.add(sHide,"East");  
+    
+    //JButton bOpen = new JButton(sysLTab.getProperty("tbOpen","Open")); 
+    //bOpen.setMargin(bGap); 
+    //pUrl.add(bOpen,"East"); 
+    tUrl.setText(fPathOpen); 
+    pUrl.add(tUrl,"Center"); 
+    
+    sHide.addActionListener(new aHide()); 
+    tUrl.addCaretListener(new updUrl());
+  } 
+  
+  private void setBox() // Box
+  { 
+    //pBox1.setLayout(new GridLayout(8,1,0,0));
+    pBox1.setBackground(csGack);
+    pBox1.setBorder(BorderFactory.createEmptyBorder(2,3,1,1));
+    JScrollPane pScr1 = new JScrollPane(pBox1);
+    pScr1.setPreferredSize(new Dimension(180, 160));
+    pScr1.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    pScr1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+    pTop.add(pScr1,"Center");  
+    pSide.add(pTop,"North"); 	
+
+  	//pBox2.setLayout(new GridLayout(24,1,0,0));
+  	pBox2.setBackground(csGack);
+  	pBox2.setBorder(BorderFactory.createEmptyBorder(2,3,1,1));
+    JScrollPane pScr2 = new JScrollPane(pBox2);
+    pScr2.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    pScr2.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+    pSide.add(pScr2,"Center"); 
+  }
+  
+  public String getFiles(String fPath) {
+	  String fn, sd = "", sf = "";
+    File d = new File(fPath); 
+    File list[] = d.listFiles();    
+    for(int i=0;i<list.length;i++){   
+      fn = list[i].getName();   
+      if(list[i].isFile()){   
+		    sf += fn +"|";
+      } else { 
+		    sd += fn +"|";
+	    }  
+    } 
+    if(sd.equals("")) sd = ":NoSubDir:";
+    if(sf.equals("")) sf = ":NoFile:";
+    sd = sd +"?"+ sf; //System.out.println(sd);
+	  return sd;
+  } 
+
+  class aHide implements ActionListener
+  {
+    public void actionPerformed(ActionEvent evt) 
+    { 
+    	pSide.setVisible(false);
+    	btSide.setEnabled(true); 
+    } 
+  } // aHide
+ 
+ 	class updUrl implements CaretListener
+	{
+    public void caretUpdate(CaretEvent e1) {	
+    tUrl.addKeyListener(new KeyAdapter(){ 
+      public void keyPressed(KeyEvent e) {
+        if(e.getKeyCode()==KeyEvent.VK_ENTER) {
+          fPathOpen = tUrl.getText(); 
+          File f = new File(fPathOpen);   
+          if(fPathOpen.equals("")) { 
+          	tUrl.setText("C:"+fPathGap);
+          	fPathOpen = tUrl.getText();
+          } // End Not Null
+          if(!f.isDirectory()) { 
+          	tUrl.setText("C:"+fPathGap);
+          	fPathOpen = tUrl.getText();
+          } // End Not Dir 
+          if(!fPathOpen.substring(fPathOpen.length()-1,fPathOpen.length()).equals(fPathGap))
+          { fPathOpen += fPathGap; tUrl.setText(fPathOpen); } 
+          reBox(); 
+          sysEditor.setText(tUrl.getText());
+        } 
+      } // end keyPressed
+    }); 
+    } 
+	} // updUrl
+
+ 
+}
+
+ 
+
+
+/*******************************************************************************
+ File : \src\panels\ToolBar.java 
+*******************************************************************************/
+package panels;
+
+import begin.*;
+import module.*;
+import module.tools.*;
+import module.puzzler.*;
+import sframe.*;
+
+//import java.lang.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
+//import java.sql.*;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+//import java.net.*;
+
+public class ToolBar extends JFrame {  
+  
+  JTextArea sysEditor = PeaceBox.sysEditor;
+  Properties sysLTab = PeaceBox.sysLTab; //sysLTab.getProperty("xxName","defValue")
+  String sysLine = System.getProperty("line.separator");
+  String sysBasePath = Info.getBasePath();
+  public JButton btSide = new JButton(sysLTab.getProperty("tbShow","Show"));
+
+  public void setTools(JPanel pTool) 
+  { 
+    Insets tGap = new Insets(0,1,-1,1); 
+    Insets tGaq = new Insets(-2,1,-2,1); //-2,1,-2,1
+    // Side...
+    btSide.setMargin(tGap); btSide.setFont(PeaceBox.sysFont);
+    pTool.add(btSide); btSide.addActionListener(new sSide());
+    // 关于...
+    ImageIcon tAbout = new ImageIcon(sysBasePath+"img\\logo\\micon.png"); 
+    JButton btnAbout = new JButton(tAbout); btnAbout.setMargin(tGaq); 
+    pTool.add(btnAbout); btnAbout.addActionListener(new sAbout()); 
+    // 工具Tools 
+    JButton btScan = new JButton(sysLTab.getProperty("tbScan","IP Scan"));  btScan.setMargin(tGap); 
+    JButton btLink = new JButton(sysLTab.getProperty("tbLink","Get Links")); btLink.setMargin(tGap); 
+    JButton btDLnk = new JButton(sysLTab.getProperty("tbDLnk","Down Links")); btDLnk.setMargin(tGap); 
+    pTool.add(btScan); btScan.addActionListener(new tScan());
+    pTool.add(btLink); btLink.addActionListener(new tLink());
+    pTool.add(btDLnk); btDLnk.addActionListener(new tDLnk()); 
+    //  娱乐Puzzler
+    JButton bpSudoku = new JButton(sysLTab.getProperty("tbSudoku","Get Sudoku")); bpSudoku.setMargin(tGap);
+    JButton bpCal24 = new JButton(sysLTab.getProperty("tbCal24","Calculate 24")); bpCal24.setMargin(tGap);
+    pTool.add(bpSudoku); bpSudoku.addActionListener(new pSudoku());
+    pTool.add(bpCal24);  bpCal24.addActionListener(new pCal24());  
+    // 退出...
+    ImageIcon tExit = new ImageIcon(sysBasePath+"img\\button\\exit.gif"); 
+    JButton btnExit = new JButton(tExit); btnExit.setMargin(tGaq); 
+    pTool.add(btnExit); btnExit.addActionListener(new sExit()); 
+
+  } 
+  
+
+  class tScan implements ActionListener
+  {
+    public void actionPerformed(ActionEvent evt) 
+    { IPScan.scanDialog(); } 
+  } // IPScan 
+  class tLink implements ActionListener
+  {
+    public void actionPerformed(ActionEvent evt) 
+    { Down.getLinks(); } 
+  } // Link  
+  class tDLnk implements ActionListener
+  {
+    public void actionPerformed(ActionEvent evt) 
+    { Down.start(); } 
+  } // DLnk
+
+  class pSudoku implements ActionListener
+  {
+    public void actionPerformed(ActionEvent evt) 
+    { 
+	  		String t1,t2;
+	  		t1 = sysEditor.getText();
+	  		t2 = Sudoku.getTab();
+	  		t2 += sysLine+"------------  "+Func.getHHMMSS()+sysLine;
+	  		sysEditor.setText(t2 + t1);
+    } 
+  } // Sudoku
+  class pCal24 implements ActionListener
+  {
+    public void actionPerformed(ActionEvent evt) 
+    { Cal24.calcu(sysLTab.getProperty("tbCal24","Calculate 24")); } 
+  } // Cak24
+  
+  class sSide implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    {
+    	PeaceBox.pSide.setVisible(true); 
+    	btSide.setEnabled(false);
+    }
+  } // About
+  class sAbout implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    {
+    	MHelp mh = new MHelp();
+    	mh.aboutDialog();
+    	//new aAbout() 
+    }
+  } // About
+  class sExit implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    { PeaceBox.actExit(); }
+  } // 退出Exit
+  
+}
+
+
+
+
+
+/*******************************************************************************
+ File : \src\sframe\MEdit.java 
+*******************************************************************************/
+package sframe;
+import begin.*;
+
+//import java.lang.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
+import java.util.regex.*;
+//import java.sql.*;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+//import java.io.PrintWriter;
+import java.net.*;
+
+public class MEdit {  
+  
+  JTextField jFind=new JTextField();//查找对话框文本域
+  JTextField jRep=new JTextField();//替换文本区2
+  int A=0,B=0,C=0,D=0;//为查找功能定义全局变量
+  
+  JTextArea sysEditor = PeaceBox.sysEditor;
+  Properties sysLTab = PeaceBox.sysLTab; //sysLTab.getProperty("xxName","defValue")
+  String sysLine = System.getProperty("line.separator");
+  
+  public void setMenu(JMenuBar sysMenu) 
+  { 
+    JMenu m = new JMenu(sysLTab.getProperty("edSubj","Edit(E)")); sysMenu.add(m);  m.setMnemonic('E'); 
+    
+    JMenuItem mFind  = new JMenuItem(sysLTab.getProperty("edIFind","Find ..."));   m.add(mFind); 
+    JMenuItem mRep   = new JMenuItem(sysLTab.getProperty("edIRep","Replace ...")); m.add(mRep); 
+    m.addSeparator();
+    JMenuItem mCopy  = new JMenuItem(sysLTab.getProperty("edICopy","Copy"));       m.add(mCopy); 
+    JMenuItem mCut   = new JMenuItem(sysLTab.getProperty("edICut","Cut"));         m.add(mCut);
+    JMenuItem mPaste = new JMenuItem(sysLTab.getProperty("edIPaste","Paste"));     m.add(mPaste); 
+    m.addSeparator();
+    JMenuItem mSAll  = new JMenuItem(sysLTab.getProperty("edISAll","Select All"));     m.add(mSAll);
+    JMenuItem mTime  = new JMenuItem(sysLTab.getProperty("edITime","Insert Time")); m.add(mTime);
+    
+    mFind.addActionListener(new aFind());
+    mRep.addActionListener(new aRep());
+    mCopy.addActionListener(new aCopy());
+    mCut.addActionListener(new aCut());
+    mPaste.addActionListener(new aPaste());
+    mSAll.addActionListener(new aSAll());
+    mTime.addActionListener(new aTime());
+    
+  } 
+  
+  public void editFindDialog() 
+  {
+    A=1; B=1;
+    final JDialog fi=new JDialog();//新建对话框
+    fi.setTitle(sysLTab.getProperty("edDSubj","Find"));
+    fi.setBounds(150,150,330,150);
+    fi.setVisible(true);
+    fi.setLayout(null);
+    fi.setResizable(false);
+    fi.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+    JLabel jlb1,jlb2;
+    jlb1=new JLabel(sysLTab.getProperty("edDCont","Find(N):")); fi.add(jlb1); jlb1.setBounds(10,10,90,20);
+    jlb2=new JLabel(sysLTab.getProperty("edDDir","Order:"));    fi.add(jlb2); jlb2.setBounds(10,45,60,20);
+    fi.add(jFind); jFind.setBounds(100,10,200,20);
+    jFind.addKeyListener(new KeyAdapter(){//模仿windows功能Alt+N选中文本
+     public void keyPressed(KeyEvent e){
+       if(e.getModifiers()==InputEvent.ALT_MASK&&e.getKeyCode()==KeyEvent.VK_N)
+         jFind.selectAll();
+     }
+    });
+    final JButton fi_ne=new JButton(sysLTab.getProperty("edDNext","Next(F3)"));               fi.add(fi_ne); fi_ne.setBounds(50,80,90,25);
+          JButton can=new JButton(sysLTab.getProperty("edDCancel","Cancel"));                 fi.add(can); can.setBounds(200,80,90,25);
+          JRadioButton up=new JRadioButton(sysLTab.getProperty("edDUp","Up(U)"));            up.setMnemonic('U');
+    final JRadioButton down=new JRadioButton(sysLTab.getProperty("edDDown","Down(D)"),true); down.setMnemonic('D');
+    up.addActionListener(new ActionListener(){
+     public void actionPerformed(ActionEvent arg0) {
+       fi_ne.setText(sysLTab.getProperty("edDPrev","Prev(F3)"));
+       A=2;//初始化变量以调用查找方法
+     }    
+    });
+    down.addActionListener(new ActionListener(){
+     public void actionPerformed(ActionEvent arg0) {
+       fi_ne.setText(sysLTab.getProperty("edDNext","Next(F3)"));
+       A=1;//初始化变量以调用查找方法
+     }  
+    });
+    ButtonGroup bg=new ButtonGroup();
+    bg.add(up); bg.add(down);
+    fi.add(up); up.setBounds(50,45,75,20);
+    fi.add(down); down.setBounds(125,45,75,20);
+    final JCheckBox jcb=new JCheckBox(sysLTab.getProperty("edDCase","Match case(C)")); jcb.setMnemonic('C');
+    jcb.addActionListener(new ActionListener(){
+     public void actionPerformed(ActionEvent e) {
+       if(jcb.isSelected()==true)//初始化变量以调用查找方法
+         B=0;
+       else
+         B=1;
+     }    
+    });
+    fi.add(jcb); jcb.setBounds(195,45,110,20);
+    fi_ne.addActionListener(new ActionListener(){
+     public void actionPerformed(ActionEvent e) {
+       editFind();//调用查找方法
+     }    
+    });
+    can.addActionListener(new ActionListener(){
+     public void actionPerformed(ActionEvent arg0) {
+       fi.dispose();
+     }    
+    });
+  }
+  
+  public void editFind() 
+  {
+    String sTmp=new String(sysEditor.getText());//临时存储所有文本
+    String sRet=jFind.getText();//返回文本域内容
+    Matcher m; Pattern p;
+    if(A==1){//如果向下方向选中
+      String s1=sTmp.substring(sysEditor.getCaretPosition());//取从光标位置到文本末尾的子串
+      if(sRet!=null){//如果输入内容不为空
+        p=Pattern.compile(sRet);//定义模式默认为区分大小写
+        if(B==1) p=Pattern.compile(sRet,Pattern.CASE_INSENSITIVE);//设定忽略大小写的模式
+        m=p.matcher(s1);
+        if(m.find()){
+          sysEditor.select(m.start()+sysEditor.getCaretPosition(), m.end()+sysEditor.getCaretPosition()); 
+          jFind.setText(sRet);
+        } else {
+          JOptionPane.showMessageDialog(null,sysLTab.getProperty("edDNoFind","Not Found"),sysLTab.getProperty("edDNoSubj","Info"),JOptionPane.WARNING_MESSAGE);
+        } // m.find()
+      } // sRet!=null 
+    } else if(A==2) { //向上查找
+      String s2=sTmp.substring(0,sysEditor.getCaretPosition()-sRet.length());//定义子串为文本开始到光标位置减要查找字符串长度
+      if(D==0) s2=sTmp.substring(0,sysEditor.getCaretPosition());//如果第一次进行向上查找时则不减要查找字符串长度
+      if(sRet!=null){
+        p=Pattern.compile(sRet);
+        if(B==1) p=Pattern.compile(sRet,Pattern.CASE_INSENSITIVE);
+        m=p.matcher(s2);
+        int Y=0;//定义变量用以控制弹出框
+        while(m.find()){
+          sysEditor.select(m.start(), m.end());
+          jFind.setText(sRet);
+          D=1; Y=1;
+        } // while
+        if(Y==0) JOptionPane.showMessageDialog(null,sysLTab.getProperty("edDNoFind","Not Found"),sysLTab.getProperty("edDNoSubj","Info"),JOptionPane.WARNING_MESSAGE);       
+      } // sRet!=null
+    } // A==2) //向上查找
+  }
+  
+  public void editRep()
+  {
+    A=1; B=1; C=0;
+    final JDialog re=new JDialog();//新建对话框并设置布局
+    re.setTitle(sysLTab.getProperty("edDRepSubj","Replace"));
+    re.setBounds(150,150,330,200);
+    re.setVisible(true);
+    re.setLayout(null);
+    re.setResizable(false);
+    re.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+    JLabel jlb1,jlb2;
+    jlb1=new JLabel(sysLTab.getProperty("edDCont","Find(N)")); re.add(jlb1); jlb1.setBounds(10,10,100,20);
+    jlb2=new JLabel(sysLTab.getProperty("edDRepCont","Replace"));   re.add(jlb2); jlb2.setBounds(10,45,100,20);
+    jFind.addKeyListener(new KeyAdapter(){//模仿windows功能Alt+N选中文本
+     public void keyPressed(KeyEvent e){
+       if(e.getModifiers()==InputEvent.ALT_MASK&&e.getKeyCode()==KeyEvent.VK_N)
+         jFind.selectAll();
+     }
+    });
+    re.add(jFind);
+    jFind.setBounds(100,10,200,20);
+    jRep.addKeyListener(new KeyAdapter(){//模仿windows功能Alt+P选中文本
+     public void keyPressed(KeyEvent e){
+       if(e.getModifiers()==InputEvent.ALT_MASK&&e.getKeyCode()==KeyEvent.VK_P)
+         jRep.selectAll();
+     }
+    });
+    re.add(jRep); jRep.setBounds(100,45,200,20);
+    final JCheckBox jcb=new JCheckBox(sysLTab.getProperty("edDCase","Match case(C)")); jcb.setMnemonic('C');
+    jcb.addActionListener(new ActionListener(){
+     public void actionPerformed(ActionEvent e) {
+      if(jcb.isSelected()==true)
+       B=0;
+      else
+       B=1;
+     }    
+    });
+    re.add(jcb); jcb.setBounds(20,85,110,20);
+    final JButton fi_ne=new JButton(sysLTab.getProperty("edDNext","Next(F3)"));
+    fi_ne.setMnemonic('F');
+    fi_ne.addActionListener(new ActionListener(){
+     public void actionPerformed(ActionEvent e) {
+      A=1;
+      editFind();//调用查找方法
+     }
+    });
+    re.add(fi_ne); fi_ne.setBounds(170,80,130,25);
+    JButton rep=new JButton(sysLTab.getProperty("edDRepNext","Replace(R)")); rep.setMnemonic('R');
+    rep.addActionListener(new ActionListener(){
+      public void actionPerformed(ActionEvent e){
+        StringBuffer srb=new StringBuffer(sysEditor.getText());//临时存储所有文本
+        String jtfs1=jFind.getText();//返回文本域内容
+        String jtfs2=jRep.getText();
+        Matcher m; Pattern p;
+        String s1=srb.substring(sysEditor.getCaretPosition());//取从光标位置到文本末尾的子串
+        if(jtfs1!=null&&jtfs2!=null){//如果输入内容不为空
+          p=Pattern.compile(jtfs1);//定义模式默认为区分大小写
+          if(B==1) p=Pattern.compile(jtfs1,Pattern.CASE_INSENSITIVE);//设定忽略大小写的模式
+          m=p.matcher(s1);
+          if(m.find()) {
+            if(C==0){
+              sysEditor.select(m.start()+sysEditor.getCaretPosition(), m.end()+sysEditor.getCaretPosition()); 
+              jFind.setText(jtfs1);
+              C++;
+            }
+            C++;
+          } else{
+            A=3;
+          }
+          if(sysEditor.getSelectedText()!=null){
+            if(C>2){
+              int start = sysEditor.getSelectionStart(); //得到要删除的字符串的起始位置
+              int len = sysEditor.getSelectedText().length(); //得到要删除的字符串的长度
+              StringBuffer srb1=new StringBuffer(sysEditor.getText());
+              srb1.delete(start,start+len);//删除选中文本
+              sysEditor.setText(srb1.toString());//用新文本设置原文本
+              sysEditor.insert(jtfs2,start);//插入要替换成的文本
+              if(A!=3) { //如果无匹配内容则不进行选中
+                sysEditor.setCaretPosition(m.start()+jtfs2.length());
+              }
+               editFind();
+            }
+          } 
+          if(A==3) JOptionPane.showMessageDialog(null,sysLTab.getProperty("edDNoFind","Not Found"),sysLTab.getProperty("edDNoSubj","Info"),JOptionPane.WARNING_MESSAGE);
+        }
+      }
+    });
+    re.add(rep); rep.setBounds(10,130,90,25);
+    JButton repal=new JButton(sysLTab.getProperty("edDRepAll","All(R)")); repal.setMnemonic('R');
+    repal.addActionListener(new ActionListener(){
+      public void actionPerformed(ActionEvent e){
+        String srb=new String(sysEditor.getText());//临时存储所有文本
+        String jtfs1=jFind.getText();//返回文本域内容
+        String jtfs2=jRep.getText();
+        Matcher m;
+        Pattern p;
+        if(jtfs1!=null&&jtfs2!=null){
+          p=Pattern.compile(jtfs1);//定义模式默认为区分大小写
+          if(B==1) p=Pattern.compile(jtfs1,Pattern.CASE_INSENSITIVE);//设定忽略大小写的模式
+          m=p.matcher(srb);
+          if(m.find()){
+            String temp=m.replaceAll(jtfs2);
+            sysEditor.setText(temp.toString());
+          }
+        }
+      }
+    });
+    re.add(repal); repal.setBounds(110,130,90,25);
+    JButton can=new JButton(sysLTab.getProperty("edDCancel","Cancel"));
+    can.addActionListener(new ActionListener(){
+      public void actionPerformed(ActionEvent e){
+        re.dispose();
+      }
+    });
+    re.add(can); can.setBounds(210,130,90,25);
+  }
+  
+  class aFind implements ActionListener
+  {
+    public void actionPerformed(ActionEvent evt) 
+    { editFindDialog(); } 
+  } // 查找f21Find
+  class aRep implements ActionListener 
+  { 
+    public void actionPerformed(ActionEvent evt) 
+    { editRep(); } 
+  } // 替换f22Rep
+  
+  class aCopy implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    { sysEditor.copy(); }
+  } // 拷贝m23Copy  
+  class aCut implements ActionListener 
+  {
+    public void actionPerformed(ActionEvent e)
+    { sysEditor.cut(); }
+  } // 剪切m24Cut  
+  class aPaste implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    { sysEditor.paste(); }
+  } // 粘贴m25Paste
+
+  class aSAll implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e) 
+    { 
+      sysEditor.setSelectionStart(0); 
+      sysEditor.setSelectionEnd(sysEditor.getText().length());  
+    } 
+  } // 全选m28SAll 
+  
+  class aTime implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    {
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+      sysEditor.append(sysLine+sdf.format(new Date()));
+    }
+  } // 日期时间m29Time
+  
+}
+
+
+
+
+
+/*******************************************************************************
+ File : \src\sframe\MFile.java 
+*******************************************************************************/
+package sframe;
+import begin.*;
+import module.tools.*;
+
+//import java.lang.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
+//import java.sql.*;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+//import java.io.PrintWriter;
+//import java.net.*;
+
+public class MFile {  
+  
+  JTextArea sysEditor = PeaceBox.sysEditor;
+  Properties sysLTab = PeaceBox.sysLTab; //sysLTab.getProperty("xxName","defValue")
+  String sysSavePath = "";
+
+  public void setMenu(JMenuBar sysMenu) 
+  {  
+    JMenu m = new JMenu(sysLTab.getProperty("flSubj","File(F)")); sysMenu.add(m); m.setMnemonic('F');
+    //m.setMargin(new Insets(10,3,10,1)); 
+    
+    JMenuItem mNew  = new JMenuItem(sysLTab.getProperty("flINew","New"));          m.add(mNew);  
+    JMenuItem mOpen = new JMenuItem(sysLTab.getProperty("flIOpen","Open ..."));    m.add(mOpen); 
+    m.addSeparator();
+    JMenuItem mSave = new JMenuItem(sysLTab.getProperty("flISave","Save"));        m.add(mSave); 
+    JMenuItem mSava = new JMenuItem(sysLTab.getProperty("flISava","Save As ...")); m.add(mSava); 
+    JMenuItem mPrint = new JMenuItem(sysLTab.getProperty("flIPrint","Print ...")); m.add(mPrint); mPrint.setEnabled(false); 
+    m.addSeparator();
+    JMenuItem mExit = new JMenuItem(sysLTab.getProperty("flIExit","Exit(X)"),'X'); m.add(mExit);
+    
+    mNew.addActionListener(new aNew());
+    mOpen.addActionListener(new aOpen());
+    mSave.addActionListener(new aSave());
+    mSava.addActionListener(new aSava());
+    mExit.addActionListener(new aExit());
+    
+    mSave.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,InputEvent.CTRL_MASK));
+    mExit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X,InputEvent.ALT_MASK));
+    //m.setShortcut(new MenuShortcut('F')); // 编译OK,但不起作用
+    //mExit.setShortcut(new MenuShortcut('X')); // OK
+    
+  } 
+  
+  public String fileSaveDialog() 
+  { 
+    String fPath = ""; 
+    JFileChooser chooser = new JFileChooser(); 
+    int returnVal = chooser.showSaveDialog(null); 
+    if (returnVal == JFileChooser.APPROVE_OPTION) { 
+        fPath = chooser.getSelectedFile().getPath(); 
+    }
+    return fPath; 
+  } // 保存对话框
+  
+  public void fileSave(String path) 
+  { 
+    String text = sysEditor.getText();
+    File myfile = new File(path); 
+    PrintWriter output = null; 
+    try { 
+      output = new PrintWriter(myfile); 
+      output.write(text); 
+    } catch (IOException ex) { 
+      //Func.doException(ex, sysLTab.getProperty("flMSave")+":(m13Save)");
+      //sysSavePath = "";
+    } finally { 
+      output.close(); 
+      output = null; 
+    } 
+    return; // true
+  } // 保存
+  
+  class aNew implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    { sysEditor.setText(""); }
+  } // 新建aNew
+  
+  class aOpen implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    { 
+      FileDialog fd=new FileDialog(new Frame(),"Open File...",FileDialog.LOAD);      
+      fd.setVisible(true);
+      String strFile=fd.getDirectory()+fd.getFile();
+      sysEditor.setText(Coder.readFile(strFile));
+    }
+  } // 打开aOpen
+  
+  class aSave implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    { 
+      if (sysSavePath == "") { 
+        sysSavePath = fileSaveDialog(); 
+        fileSave(sysSavePath); 
+      } else { 
+        fileSave(sysSavePath); 
+      } 
+    }
+  } // 保存aSave
+  
+  class aSava implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    { 
+      sysSavePath = fileSaveDialog(); 
+      fileSave(sysSavePath); 
+    }
+  } // 另存aSava
+  
+  class aExit implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    { PeaceBox.actExit(); }
+  } // 退出Exit
+  
+}
+
+
+
+
+
+/*******************************************************************************
+ File : \src\sframe\MHelp.java 
+*******************************************************************************/
+package sframe;
+import begin.*;
+
+//import java.lang.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
+//import java.sql.*;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+//import java.net.*;
+
+public class MHelp {  
+  
+  JTextArea sysEditor = PeaceBox.sysEditor;
+  Properties sysLTab = PeaceBox.sysLTab; //sysLTab.getProperty("xxName","defValue")
+  String sysLine = System.getProperty("line.separator");
+  String sysBasePath = Info.getBasePath();
+  Properties sysConfig = PeaceBox.sysConfig;
+
+  public void setMenu(JMenuBar sysMenu) 
+  { 
+    JMenu m = new JMenu(sysLTab.getProperty("hpSubj","Help(H)")); sysMenu.add(m);     m.setMnemonic('H'); 
+    
+    JMenuItem mHelp = new JMenuItem(sysLTab.getProperty("hpIHelp","Help ..."));       m.add(mHelp); 
+    JMenuItem mOnline = new JMenuItem(sysLTab.getProperty("hpIOnline","Online ...")); m.add(mOnline); mOnline.setEnabled(false);
+    m.addSeparator();                                                  
+    JMenuItem mIJDK = new JMenuItem(sysLTab.getProperty("hpIJDK","Info JDK"));        m.add(mIJDK); 
+    JMenuItem mICSet = new JMenuItem(sysLTab.getProperty("hpICSet","Info Charset"));  m.add(mICSet); 
+    JMenuItem mIProp = new JMenuItem(sysLTab.getProperty("hpIProp","Info Config"));   m.add(mIProp); 
+    m.addSeparator();                                   
+    JMenuItem mAbout = new JMenuItem(sysLTab.getProperty("hpIAbout","About ..."));    m.add(mAbout);
+
+    mHelp.addActionListener(new aHelp());
+    mIJDK.addActionListener(new aIJDK());
+    mICSet.addActionListener(new aICSet());
+    mIProp.addActionListener(new aICfg());
+    mAbout.addActionListener(new aAbout());
+    
+  } 
+  
+  public void aboutDialog() 
+  {
+    JDialog he = new JDialog();
+    he.setTitle("About Peace Box");
+    he.setBounds(150,150,300,200);
+    he.setLayout(null);
+    he.setVisible(true);
+    he.setResizable(false); //不可调整大小
+    he.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+    he.setIconImage(Toolkit.getDefaultToolkit().getImage(sysBasePath+"img\\logo\\icon.png"));
+    
+    JLabel img1,img2,ab1,ab2,ab3,ab4,ab5,ab6;
+    
+    img1 = new JLabel(); img1.setIcon(new ImageIcon(sysBasePath+"img\\logo\\logo2.jpg"));
+    he.add(img1);        img1.setBounds(20,15,68,60);
+    img2 = new JLabel(); img2.setIcon(new ImageIcon(sysBasePath+"img\\logo\\logo.jpg"));
+    he.add(img2);        img2.setBounds(130,15,120,60);
+    
+    ab1=new JLabel("Version: 1.00");         he.add(ab1); ab1.setBounds(20,102,100,15);
+    ab2=new JLabel("Author: Peace");         he.add(ab2); ab2.setBounds(20,122,100,15);
+    ab3=new JLabel("Build: 2010-02-23");     he.add(ab3); ab3.setBounds(20,142,100,15);
+    
+    ab4=new JLabel("QQ: 80893510");          he.add(ab4); ab4.setBounds(130,102,140,15);
+    ab5=new JLabel("Mail: xpigeon@163.com"); he.add(ab5); ab5.setBounds(130,122,140,15);
+    ab6=new JLabel("Http: www.dg.gd.cn/");   he.add(ab6); ab6.setBounds(130,142,140,15); 
+  } 
+
+	class aHelp implements ActionListener
+	{
+	  public void actionPerformed(ActionEvent e) { 
+	  	try {
+	  	  String cmd = "cmd.exe /c start iexplore "+sysBasePath+"data\\help.htm";
+	  	  Runtime.getRuntime().exec(cmd); 
+	    } catch (Exception ex) {
+	    	Func.doException(ex, sysLTab.getProperty("hpMOpen")+":(m82Open)");
+	    }
+	  }
+	} // Help 
+
+  class aIJDK implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    { 
+ 		  sysEditor.setText("");
+ 		  Properties p = Info.getJDKInfo();                                                                                      
+      Enumeration en = p.propertyNames();                          
+      int i = 0;                                                           
+      while(en.hasMoreElements()){                                         
+        i++;                                                               
+        String sKey = (String)en.nextElement();                          
+        String sValue = p.getProperty(sKey);  
+        sValue = sValue.replace("\n","\\n");
+        sValue = sValue.replace("\r","\\r");
+        sysEditor.append(i+":"+sKey+"="+sValue+""+sysLine);                        
+      } 
+    }
+  } // 信息m83JDK
+  class aICSet implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    { 
+      sysEditor.setText("");
+		  String[] a = Info.getCharsets();
+		  int m = Integer.valueOf(a[0]);
+		  for(int i=1;i<=m;i++){
+		  	sysEditor.append(i+":"+a[i]+sysLine);
+		  }
+    }
+  } // 设置m84CSet
+  class aICfg implements ActionListener
+  {
+    public void actionPerformed(ActionEvent e)
+    { 
+      sysEditor.setText("");
+      Enumeration en = sysConfig.propertyNames();                          
+      int i = 0;                                                           
+      while(en.hasMoreElements()){                                         
+        i++;                                                               
+        String sKey = (String)en.nextElement();                          
+        String sValue = sysConfig.getProperty(sKey); 
+        sysEditor.append(i+":"+sKey+"="+sValue+""+sysLine);                           
+      }
+    }
+  } // 设置m85Cfg
+	
+	class aAbout implements ActionListener
+	{
+    public void actionPerformed(ActionEvent e)
+    { aboutDialog(); }
+	} // 帮助m81Help
+
+
+  
+}
+
+
+
+
+
+/*******************************************************************************
+ File : \src\sframe\MSett.java 
+*******************************************************************************/
+package sframe;
+import begin.*;
+
+//import java.lang.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
+//import java.sql.*;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+//import java.net.*;
+
+public class MSett {  
+  
+  JTextArea sysEditor = PeaceBox.sysEditor;
+  static String sysLine = System.getProperty("line.separator");
+  static Properties sysConfig = PeaceBox.sysConfig;
+  static Properties sysLTab = PeaceBox.sysLTab; //sysLTab.getProperty("xxName","defValue")
+  String setLang = PeaceBox.sysLang;
+  
+  JCheckBoxMenuItem mWrap;
+  String[] mStr = sysLTab.getProperty("stICName","White-Black(Def)").replace(" ","").split(";"); 
+  int mLen = mStr.length;
+  JCheckBoxMenuItem[] mBack = new JCheckBoxMenuItem[mLen];
+
+  public void setMenu(JMenuBar sysMenu) 
+  { 
+    JMenu m = new JMenu(sysLTab.getProperty("stSubj","Settin(S)")); sysMenu.add(m);  m.setMnemonic('S'); 
+    
+    mWrap = new JCheckBoxMenuItem(sysLTab.getProperty("stIWrap","Wrap"));            m.add(mWrap);
+    m.addSeparator();                                                  
+    JMenuItem mLang = new JMenuItem(sysLTab.getProperty("stILang","Language"));      m.add(mLang); 
+    JMenuItem mProp = new JMenuItem(sysLTab.getProperty("stIPara","Parameter"));     m.add(mProp); mProp.setEnabled(false);
+    m.addSeparator();
+    String[] sBack = sysLTab.getProperty("stICBack","255,255,255").split(";");
+    String[] sFore = sysLTab.getProperty("stICFore","0,0,0").split(";");
+    int mLen = mStr.length;
+    final Color[] mCorB = new Color[mLen];
+    final Color[] mCorF = new Color[mLen]; 
+  	for(int i=0;i<mLen;i++)
+  	{  
+      final int j = i;
+      mBack[i] = new JCheckBoxMenuItem(mStr[i]); m.add(mBack[i]);
+      String[] ta = sBack[i].replace(" ","").split(","); 
+      mCorB[i] = new Color(Integer.valueOf(ta[0]),Integer.valueOf(ta[1]),Integer.valueOf(ta[2])); 
+      String[] tb = sFore[i].replace(" ","").split(","); 
+      mCorF[i] = new Color(Integer.valueOf(tb[0]),Integer.valueOf(tb[1]),Integer.valueOf(tb[2])); 
+      mBack[i].setBackground(mCorB[i]); 
+      mBack[i].setForeground(mCorF[i]); 
+      mBack[i].addActionListener(new ActionListener() { 
+      public void actionPerformed(ActionEvent e) { 
+        setBack(mCorB, mCorF, j);
+      } 
+      });
+  	}
+    mBack[0].setState(true); mBack[0].setEnabled(false);
+
+    mWrap.addActionListener(new aWrap());
+    mLang.addActionListener(new aLang());
+    
+  } 
+
+  public void setBack(Color[] c1, Color[] c2, int j)
+  {                 
+  	for(int i=0;i<mBack.length;i++)
+  	{                                                  
+  	  mBack[i].setEnabled(true);   
+  	  mBack[i].setState(false);  
+  	}                             
+    mBack[j].setEnabled(false);  
+    mBack[j].setState(true); 
+    sysEditor.setBackground(c1[j]);
+    sysEditor.setForeground(c2[j]);   
+  }
+  
+  public static void saveProp()
+  {  
+  	String ps="",t="";
+	  Properties p = PeaceBox.sysConfig; 
+	  ps += "# System"+sysLine;  
+	  ps += "cfgCSet="+p.getProperty("cfgCSet","ISO-8859-1")+sysLine;  
+	  ps += "cfgLang="+p.getProperty("cfgLang","English.ini")+sysLine;
+	  ps += "cfgFont="+p.getProperty("cfgFont","Fixedsys")+sysLine;  
+	  ps += "# File"+sysLine; 
+	  t = p.getProperty("fileSave",PeaceBox.sysBasePath+"temp"); 
+	  ps += "fileSave="+t.replace("\\","\\\\")+sysLine;  
+	  t = p.getProperty("fileOpen",PeaceBox.sysBasePath+"temp"); 
+	  ps += "fileOpen="+t.replace("\\","\\\\")+sysLine; 
+	  ps += "# IP"+sysLine;  
+	  ps += "IPMin="+p.getProperty("IPMin","2")+sysLine;  
+	  ps += "IPMax="+p.getProperty("IPMax","254")+sysLine;
+	  ps += "IPFlag="+p.getProperty("IPFlag","OK")+sysLine;
+	  ps += "# Coder"+sysLine;  
+	  ps += "CDExts="+p.getProperty("CDExts","asp|jsp|java|php|")+sysLine;  
+	  ps += "CDFill="+p.getProperty("CDFill","editor|pcode|")+sysLine;
+	  
+  	try {
+	    File fp = new File(PeaceBox.sysBasePath+"data\\PeaceBox.ini");
+	    if(!fp.exists()) fp.createNewFile();
+	    FileWriter r = new FileWriter(fp);   
+      PrintWriter f = new PrintWriter(r); 
+      f.print(ps); 
+      r.close();  
+    } catch(Exception ex) {   
+	    Func.doException(ex, sysLTab.getProperty("stLESave","(saveProp)"));
+    }
+  	
+  }
+
+  class aWrap implements ActionListener
+  {
+    public void actionPerformed(ActionEvent evt) 
+    { 
+      if(mWrap.getState())
+        sysEditor.setLineWrap(true);
+      else
+        sysEditor.setLineWrap(false);
+    } 
+  } // 换行mWrap
+
+  class aLang implements ActionListener
+  {
+    public void actionPerformed(ActionEvent evt) 
+    { 
+      final JDialog d = new JDialog();      d.setVisible(true); 
+      d.setTitle(sysLTab.getProperty("stLSubj","Set Language")); d.setLayout(null);
+      d.setBounds(150,150,300,150);         d.setResizable(false);
+      d.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+      
+      JComboBox c = new JComboBox();    d.add(c);  c.setBounds(30,20,240,20);
+      JButton b1 = new JButton(sysLTab.getProperty("stLSet","Set"));       d.add(b1); b1.setBounds(30,60,100,20);  
+      JButton b2 = new JButton(sysLTab.getProperty("stLCancel","Cancel")); d.add(b2); b2.setBounds(170,60,100,20); 
+      
+      File dir = new File(PeaceBox.sysBasePath+"img\\lang\\"); 
+      File f[] = dir.listFiles();  
+      for(int i=0;i<f.length;i++){   
+        String fn = f[i].getName();   
+        if(f[i].isFile()){   
+	        c.addItem(fn); 
+	        if(PeaceBox.sysLang.equals(fn)) c.setSelectedItem(fn);
+	      }  
+      } 
+      
+      c.addItemListener(new ItemListener() {
+        public void itemStateChanged(ItemEvent ie) {
+          if(ie.getStateChange() == 1) {
+            setLang = ie.getItem().toString();
+          }
+        }
+      }); // 更改
+      b1.addActionListener(new ActionListener(){
+		    public void actionPerformed(ActionEvent e) { 
+          sysConfig.setProperty("cfgLang",setLang);
+          PeaceBox.sysLang = setLang;
+          saveProp();
+		    	JOptionPane.showMessageDialog(null,sysLTab.getProperty("stLFSave","Set OK,Please Restart It!"));
+		    	d.dispose();
+		    }
+		  } );  // 确认
+      b2.addActionListener(new ActionListener(){
+		    public void actionPerformed(ActionEvent e) { 
+		    	d.dispose();
+		    }
+		  } );	// 取消
+		  
+    } 
+  } // Lang
+
+  
+}
+
+
+
+
+
+/*******************************************************************************
+ File : \src\test01\t01\Test11.java 
+*******************************************************************************/
+package test01.t01;
+
+import javax.swing.*;
+
+import  java.util.ArrayList;   
+import  java.util.List;   
+import  java.util.Stack;  
+
+public class Test11 extends JFrame  {
+  public static void main(String args[]){
+    System.out.println("This is a test program.");
+    try {
+      //Object result = Eval.eval("2+3+55*22+21*2+(3+2)*3+4*3+3*4#" ); 
+      //System.out.println(result);
+    }  catch (Exception e) { 
+      //System.out.println(e.toString()); 
+    } 
+    
+    JFrame f = new JFrame("f");
+    JPanel p = new JPanel();
+    f.setVisible(true);
+    //p.setAlwaysOnTop(true);
+    
+  } 
+} 

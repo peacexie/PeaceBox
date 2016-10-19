@@ -1,0 +1,58 @@
+
+-----------------------------------------------------------------------------
+
+侧边信息                    OK
+打开文件缓冲 1024*1024 缓冲 OK
+源代码文件导出              OK
+计算器                      OK
+
+参数
+fileSave=E:\\jsp\\prj\\pbox\\temp
+fileOpen=E:\\jsp\\prj\\pbox\\temp
+
+鸽子下载(断点分段下载)
+文件替换
+素数(自定义)
+
+-----------------------------------------------------------------------------
+
+-classpath; package; 面向对象 
+java.lang.*; java.io.*; java.util.*; java.sql.*;
+java.text.*; java.net.*; javax.naming.*;
+IDE+J2EE
+Web+JSP+Servlet
+
+-----------------------------------------------------------------------------
+
+2010-02-04 云水三千 19:55:15 是啊，一直用java开发j2ee和swing，swt 
+Swt: 类、方法的名称和结构已经少有改变
+
+-----------------------------------------------------------------------------
+
+
+D:\Documents and Settings\Administrator\Application Data\Sun
+
+巴金　激流三部曲：《家》
+http://read.anhuinews.com/system/2004/11/18/001050284.shtml
+
+穷人缺什么
+http://vip.book.sina.com.cn/book/index_39750.html
+
+政府有钱为何不如民间富有：金融的逻辑
+http://vip.book.sina.com.cn/book/index_103444.html
+
+转型升级新模式：商业模式的力量
+http://vip.book.sina.com.cn/book/index_117503.html
+
+---------------------------------------------------
+
+Eclipse教程
+http://dev.yesky.com/eclipse/
+http://tieba.baidu.com/javac/shipin/list/Eclipse%BD%CC%B3%CC/
+Eclipse 的安装与配置
+http://blog.csdn.net/dpchai/archive/2006/03/13/622827.aspx
+
+24eclipse实战视频教程2.1
+http://you.video.sina.com.cn/b/9882476-1342351227.html
+
+---------------------------------------------------

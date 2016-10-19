@@ -1,0 +1,11 @@
+# System
+cfgCSet=GB2312
+cfgLang=Chinese.ini
+cfgFont=ÐÂËÎÌå
+# File
+fileSave=E:\\jsp\\prj\\pbox\\temp
+fileOpen=E:\\jsp\\prj\\pbox\\temp
+# IP
+IPMin=2
+IPMax=254
+IPFlag=OK

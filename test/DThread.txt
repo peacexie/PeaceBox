@@ -1,0 +1,53 @@
+C3. 多线程下载 调度程序(代码)
+private static String DownFlag = ""; 
+private static int DownThread = 8;
+  
+if(flagSleep()) { //////////// start 调度程序
+  while(flagSleep()) {
+  	try {
+  		Thread.sleep(2000);
+  	} catch (Exception Exp) { 
+  		;//
+  	}
+  }
+} else { ///////////////////// else 调度程序 
+  flagNew();
+  new Thread() {   
+    public void run() {   
+      String s = down(url, jAra); 
+    } // run   
+  }.start(); // new Thread 
+} //////////////////////////// end 调度程序 
+
+flagEnd("X");
+flagEnd("V");
+
+  private static boolean flagSleep() 
+  {
+  	if(DownFlag.length()-DownFlag.replace("-","").length()>=DownThread) return true;
+  	else return false;
+  }
+  
+  private static void flagNew() 
+  {
+  	DownFlag += "-";
+  }
+  
+  private static void flagEnd(String r) 
+  {
+  	String c,s="",t = DownFlag;
+  	if(t.indexOf("-")>=0) {
+  		boolean f = true;
+  		for(int i=0;i<t.length();i++) {
+  		  c = t.substring(i,i+1); 
+  		  if(f&&c.equals("-")) {
+  		  	s += r;
+  		  	f = false;
+  		  } else {
+  		    s += c;
+  		  }
+  		}
+    }
+    DownFlag = s;
+  }
+  
